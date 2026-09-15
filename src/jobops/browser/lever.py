@@ -118,8 +118,8 @@ class LeverBrowserAdapter:
 
         application_forms = [form for form in page.forms if self._is_application_form(form)]
         if any(self._lever_action(form.action) for form in application_forms):
-            score += 0.35
-            reasons.append("Lever application form action")
+            score += 0.50
+            reasons.append("verified Lever application form action")
         if any(self._application_selector(form.selector) for form in application_forms):
             score += 0.15
             reasons.append("application-form selector signal")
