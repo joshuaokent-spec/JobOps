@@ -4,12 +4,14 @@ from urllib.parse import urlsplit
 
 from playwright.sync_api import BrowserContext, Frame, Page, Route, sync_playwright
 
+from jobops.browser.audit_redaction import SCREENSHOT_REDACTION_SCRIPT
 from jobops.browser.base import (
     BrowserNavigationBlockedError,
     BrowserPolicyError,
     SubmissionBlockedError,
 )
 from jobops.models.browser import BrowserPageSnapshot, BrowserSessionConfig
+from jobops.models.browser_audit import BrowserInspectionCapture
 
 _DISALLOWED_HOST_SUFFIXES = ("linkedin.com",)
 _MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -202,6 +204,27 @@ class PlaywrightBrowserInspector:
             finally:
                 browser.close()
 
+    def capture_url(self, url: str) -> BrowserInspectionCapture:
+        """Capture structural state plus a privacy-redacted screenshot without writing."""
+        self._assert_allowed_url(url)
+        blocked = {"count": 0}
+        navigation = {"complete": False}
+
+        with sync_playwright() as playwright:
+            browser_type = getattr(playwright, self.config.engine.value)
+            browser = browser_type.launch(headless=self.config.headless)
+            try:
+                context = self._new_context(browser)
+                self._install_network_guard(context, blocked, navigation)
+                context.add_init_script(_SUBMISSION_GUARD_SCRIPT)
+                page = context.new_page()
+                page.set_default_timeout(self.config.timeout_ms)
+                page.goto(url, wait_until="domcontentloaded", timeout=self.config.timeout_ms)
+                navigation["complete"] = True
+                return self._capture(page, blocked_requests=blocked["count"])
+            finally:
+                browser.close()
+
     def inspect_html(
         self,
         html: str,
@@ -237,6 +260,40 @@ class PlaywrightBrowserInspector:
                 page.set_content(guarded_html, wait_until="domcontentloaded")
                 page.wait_for_timeout(25)
                 return self._snapshots(
+                    page,
+                    blocked_requests=blocked["count"],
+                    root_url_override=base_url,
+                )
+            finally:
+                browser.close()
+
+    def capture_html(
+        self,
+        html: str,
+        *,
+        base_url: str = "https://fixture.invalid/",
+    ) -> BrowserInspectionCapture:
+        """Capture controlled HTML with the same guards used by normal inspection."""
+        self._assert_allowed_url(base_url)
+        blocked = {"count": 0}
+        navigation = {"complete": True}
+
+        with sync_playwright() as playwright:
+            browser_type = getattr(playwright, self.config.engine.value)
+            browser = browser_type.launch(headless=self.config.headless)
+            try:
+                context = self._new_context(browser)
+                self._install_network_guard(context, blocked, navigation)
+                context.add_init_script(_SUBMISSION_GUARD_SCRIPT)
+                page = context.new_page()
+                page.set_default_timeout(self.config.timeout_ms)
+                guarded_html = (
+                    f'<base href="{escape(base_url, quote=True)}">'
+                    f"<script>{_SUBMISSION_GUARD_SCRIPT}</script>{html}"
+                )
+                page.set_content(guarded_html, wait_until="domcontentloaded")
+                page.wait_for_timeout(25)
+                return self._capture(
                     page,
                     blocked_requests=blocked["count"],
                     root_url_override=base_url,
@@ -281,6 +338,30 @@ class PlaywrightBrowserInspector:
                 route.continue_()
 
         context.route("**/*", handler)
+
+    @classmethod
+    def _capture(
+        cls,
+        page: Page,
+        *,
+        blocked_requests: int,
+        root_url_override: str | None = None,
+    ) -> BrowserInspectionCapture:
+        documents = cls._snapshots(
+            page,
+            blocked_requests=blocked_requests,
+            root_url_override=root_url_override,
+        )
+        redacted_dom_values = sum(
+            int(frame.evaluate(SCREENSHOT_REDACTION_SCRIPT) or 0)
+            for frame in page.frames
+        )
+        screenshot = page.screenshot(full_page=True, type="png")
+        return BrowserInspectionCapture(
+            documents=documents,
+            screenshot_png=screenshot,
+            redacted_dom_values=redacted_dom_values,
+        )
 
     @classmethod
     def _snapshots(
