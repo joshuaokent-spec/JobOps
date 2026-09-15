@@ -1,0 +1,31 @@
+candidate_id: sample-candidate
+target_roles:
+  - Data Engineer
+  - Data Scientist
+  - AI Engineer
+skills:
+  - Python
+  - SQL
+  - Pandas
+  - FastAPI
+  - PostgreSQL
+years_experience: 2
+preferred_work_modes:
+  - remote
+  - hybrid
+preferred_locations:
+  - Michigan
+minimum_salary: 70000
+facts:
+  - key: authorized_to_work_us
+    value: true
+    verified: true
+    risk: high
+    evidence:
+      - Candidate-confirmed fact
+  - key: willing_to_relocate
+    value: false
+    verified: true
+    risk: medium
+    evidence:
+      - Candidate preference
