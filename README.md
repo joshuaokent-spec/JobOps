@@ -11,13 +11,16 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **ML where prediction helps, LLMs where language helps:** ranking and outcome prediction are modeled separately from natural-language generation.
 - **Local-first language inference:** candidate material can be drafted through an on-device Foundry Local model without coupling agents to a specific model runtime.
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
-- **Auditable decisions:** every score, generated answer, verification finding, and approval decision should be traceable to stored evidence.
+- **Auditable decisions:** every score, generated answer, verification finding, approval decision, and browser-preparation step should be traceable.
+- **Browser safety by construction:** browser inspection and preparation are separate from consequential submission.
 
 ## Current milestone: M3 — Browser Automation
 
-M1 Job Intelligence and M2 Application Intelligence are complete.
+M1 Job Intelligence and M2 Application Intelligence are complete. M3 has begun with a guarded Playwright browser abstraction and real-Chromium CI coverage.
 
-JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can also select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions before any future browser automation is allowed to use the prepared content.
+JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
+
+The first M3 slice can now open employer/ATS pages in isolated Playwright contexts, inventory native form controls, and produce a typed dry-run preparation plan. Submit-capable controls remain inventory-only, mutating network requests are blocked in dry-run mode, and M3.1 contains no executable submission path.
 
 ### M1 capabilities implemented
 
@@ -55,7 +58,22 @@ JobOps can ingest supported ATS feeds, normalize and persist canonical postings,
 - mocked/fake model testing so CI remains model-download-free;
 - sanitized public candidate evidence with no production PII.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, and `docs/approval-queue.md` for the M2 contracts.
+### M3 capabilities implemented so far
+
+- optional Playwright browser dependency rather than a mandatory base-runtime dependency;
+- typed browser session, page, form, field, option, and dry-run-plan contracts;
+- isolated non-persistent browser contexts with service workers blocked by default;
+- native form inventory for input, textarea, select, checkbox, radio, button, and file controls;
+- label, accessible-name, required/disabled state, option, and stable-selector extraction;
+- deterministic dry-run planning for fill/select/choose/upload/review/skip operations;
+- submit-capable controls explicitly represented as `blocked_submit` rather than executable actions;
+- dry-run blocking of `POST`, `PUT`, `PATCH`, and `DELETE` browser requests;
+- post-load document-navigation blocking while the submission gate is closed;
+- DOM guards for submit events, `form.submit()`, and `form.requestSubmit()`;
+- LinkedIn browser navigation kept outside the ATS automation layer;
+- real headless Chromium tests against a controlled application-form fixture in GitHub Actions.
+
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, and `docs/browser-dry-run.md` for the current system contracts.
 
 ## Releases
 
@@ -79,10 +97,10 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-
 - claim-level answer verification;
 - persistent human approval queue.
 
-### M3 — Application Automation — next
+### M3 — Application Automation — in progress
 
-- Playwright browser abstraction;
-- generic form-field detection;
+- guarded Playwright abstraction — complete;
+- semantic generic form-field detection — next;
 - ATS-specific adapters;
 - resume/document upload;
 - application preparation;
@@ -129,10 +147,17 @@ Application Question -> Risk/Review Classifier --------------+          |
                                                              |
                                                   APPROVED FOR PREPARATION
                                                              |
-                                                             X  no submit in M2
+                                                             v
+                                             Guarded Playwright Inspector
+                                                             |
+                                                Structural Form Snapshot
+                                                             |
+                                                  Dry-Run Action Plan
+                                                             |
+                                                             X  no submit in M3.1
                                                              |
                                                              v
-                                              M3 Browser Preparation Layer
+                                           Semantic Field Mapping / ATS Adapters
                                                              |
                                                    Explicit Submit Gate
                                                              |
@@ -184,6 +209,17 @@ foundry server status
 Use the model alias at the Foundry CLI layer to select the best local hardware variant. If the REST service requires the concrete loaded model ID, set `JOBOPS_LLM_MODEL` to that value in your private `.env`.
 
 See `docs/llm-providers.md` for provider configuration and the local-inference safety boundary.
+
+## Browser dry-run development
+
+Install the optional browser stack and Chromium only when working on M3 automation:
+
+```bash
+pip install -e ".[dev,browser]"
+python -m playwright install chromium
+```
+
+M3.1 exposes structural inspection and a non-executing preparation plan. It does not fill or submit a live application. See `docs/browser-dry-run.md` for the browser-policy contract.
 
 ## Job ingestion
 
@@ -248,27 +284,28 @@ src/jobops/
   agents/         narrative drafting, verification, orchestration interfaces
   api/            FastAPI health, jobs, scoring, ranking, and approval endpoints
   approvals/      human-review state machine
+  browser/        guarded Playwright inspection and dry-run planning
   db/             PostgreSQL models, sessions, repositories, approval persistence
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
   knowledge/      TruthStore, resume evidence, retrieval, question policy
   llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
-  models/         typed domain/query/evidence/retrieval/LLM/approval models
+  models/         typed domain/query/evidence/retrieval/LLM/browser/approval models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
 data/evaluation/  labeled evaluation fixtures
 docs/             architecture and engineering decisions
-tests/            unit and integration tests
+tests/            unit, integration, and controlled browser tests
 ```
 
 ## Safety and privacy
 
 Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, and approval cannot trigger final submission on its own.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, and M3.1 browser inspection cannot execute application submission.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, browser automation, testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, real-browser CI testing, observability, and analytics all live behind one product boundary.

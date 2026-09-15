@@ -13,6 +13,18 @@ from jobops.models.approval import (
     ApprovalReason,
     ApprovalStatus,
 )
+from jobops.models.browser import (
+    BrowserDryRunPlan,
+    BrowserEngine,
+    BrowserFieldDescriptor,
+    BrowserFieldKind,
+    BrowserFormSnapshot,
+    BrowserOption,
+    BrowserPageSnapshot,
+    BrowserSessionConfig,
+    DryRunAction,
+    DryRunOperation,
+)
 from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
 from jobops.models.draft_verification import (
     DraftVerificationRequest,
@@ -62,6 +74,14 @@ __all__ = [
     "ApprovalPage",
     "ApprovalReason",
     "ApprovalStatus",
+    "BrowserDryRunPlan",
+    "BrowserEngine",
+    "BrowserFieldDescriptor",
+    "BrowserFieldKind",
+    "BrowserFormSnapshot",
+    "BrowserOption",
+    "BrowserPageSnapshot",
+    "BrowserSessionConfig",
     "CandidateFact",
     "CandidateProfile",
     "ChatMessage",
@@ -70,6 +90,8 @@ __all__ = [
     "ChatRole",
     "DraftVerificationRequest",
     "DraftVerificationResult",
+    "DryRunAction",
+    "DryRunOperation",
     "EvidenceKind",
     "EvidenceMetric",
     "EvidenceQuery",

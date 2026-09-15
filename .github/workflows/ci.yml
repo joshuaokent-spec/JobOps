@@ -31,7 +31,9 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,browser]"
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
       - name: Lint
         run: ruff check .
       - name: Migrate test database
