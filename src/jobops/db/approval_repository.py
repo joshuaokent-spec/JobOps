@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Protocol
 
 from sqlalchemy import func, select
@@ -165,9 +165,15 @@ class SqlAlchemyApprovalRepository:
             evidence_ids=list(record.evidence_ids or []),
             reviewer=record.reviewer,
             decision_note=record.decision_note,
-            created_at=record.created_at,
-            updated_at=record.updated_at,
-            reviewed_at=record.reviewed_at,
+            created_at=_as_utc(record.created_at),
+            updated_at=_as_utc(record.updated_at),
+            reviewed_at=_as_utc(record.reviewed_at) if record.reviewed_at else None,
             approved_for_preparation=status is ApprovalStatus.APPROVED,
             submitted=False,
         )
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
