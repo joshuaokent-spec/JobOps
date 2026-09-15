@@ -12,9 +12,11 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
 - **Auditable decisions:** every score and generated answer should be explainable from stored evidence.
 
-## Current milestone: M0 — Foundation
+## Current milestone: M1 — Job Intelligence
 
-This initial scaffold includes:
+The M0 foundation is complete. M1 is turning that foundation into a persistent job-intelligence system that can ingest, normalize, deduplicate, store, query, and rank real job postings.
+
+### M0 foundation includes
 
 - typed domain models for jobs, candidate profiles, facts, and applications;
 - an evidence-backed `TruthStore`;
@@ -103,6 +105,13 @@ uvicorn jobops.api.main:app --reload
 
 Then open `http://127.0.0.1:8000/docs`.
 
+Initialize or upgrade the PostgreSQL schema with:
+
+```bash
+docker compose up -d postgres
+alembic upgrade head
+```
+
 ## Example API usage
 
 ```bash
@@ -123,6 +132,7 @@ curl -X POST http://127.0.0.1:8000/v1/score \
 src/jobops/
   agents/       orchestration interfaces and future specialized agents
   api/          FastAPI application
+  db/           persistence models, sessions, and repository interfaces
   knowledge/    evidence-backed candidate truth store
   matching/     scoring, feature generation, future learned rankers
   models/       typed domain models
