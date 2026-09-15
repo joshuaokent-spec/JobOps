@@ -39,7 +39,7 @@ def create_approval(
 @router.get("", response_model=ApprovalPage)
 def list_approvals(
     session: Annotated[Session, Depends(get_session)],
-    approval_status: ApprovalStatus | None = Query(default=None, alias="status"),
+    approval_status: Annotated[ApprovalStatus | None, Query(alias="status")] = None,
     job_id: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
