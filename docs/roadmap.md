@@ -37,7 +37,7 @@
 
 - [x] Playwright abstraction
 - [x] Generic semantic form-field detector
-- [ ] Greenhouse browser adapter
+- [x] Greenhouse browser adapter
 - [ ] Lever browser adapter
 - [ ] Workday research/prototype
 - [ ] Screenshot/audit artifacts
