@@ -10,6 +10,7 @@ class LeverAdapter:
     """Fetch published jobs from Lever's public Postings API."""
 
     default_base_url = "https://api.lever.co/v0/postings"
+    source_name = "lever"
 
     def __init__(
         self,
@@ -21,6 +22,7 @@ class LeverAdapter:
         max_pages: int = 100,
     ):
         self.site = site.strip()
+        self.source_scope = self.site
         self.company = company.strip()
         self.base_url = base_url.rstrip("/")
         self.page_size = page_size
@@ -30,7 +32,10 @@ class LeverAdapter:
         if page_size < 1 or max_pages < 1:
             raise ValueError("page_size and max_pages must be positive")
 
-    async def fetch(self, client: httpx.AsyncClient | None = None) -> list[SourceJobPosting]:
+    async def fetch(
+        self,
+        client: httpx.AsyncClient | None = None,
+    ) -> list[SourceJobPosting]:
         if client is not None:
             return await self._fetch(client)
 
@@ -59,7 +64,11 @@ class LeverAdapter:
         try:
             response = await client.get(
                 url,
-                params={"mode": "json", "skip": skip, "limit": self.page_size},
+                params={
+                    "mode": "json",
+                    "skip": skip,
+                    "limit": self.page_size,
+                },
                 headers={"Accept": "application/json"},
             )
             response.raise_for_status()
@@ -84,11 +93,16 @@ class LeverAdapter:
             salary = {}
 
         return SourceJobPosting(
-            source="lever",
+            source=self.source_name,
+            source_scope=self.source_scope,
             source_job_id=str(item["id"]),
             company=self.company,
             title=str(item["text"]),
-            description=str(item.get("descriptionPlain") or item.get("description") or ""),
+            description=str(
+                item.get("descriptionPlain")
+                or item.get("description")
+                or ""
+            ),
             location=categories.get("location"),
             workplace_type=item.get("workplaceType"),
             employment_type=categories.get("commitment"),

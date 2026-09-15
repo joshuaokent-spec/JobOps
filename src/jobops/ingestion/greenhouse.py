@@ -10,14 +10,19 @@ class GreenhouseAdapter:
     """Fetch published jobs from Greenhouse's public Job Board API."""
 
     base_url = "https://boards-api.greenhouse.io/v1/boards"
+    source_name = "greenhouse"
 
     def __init__(self, board_token: str, company: str):
         self.board_token = board_token.strip()
+        self.source_scope = self.board_token
         self.company = company.strip()
         if not self.board_token or not self.company:
             raise ValueError("board_token and company are required")
 
-    async def fetch(self, client: httpx.AsyncClient | None = None) -> list[SourceJobPosting]:
+    async def fetch(
+        self,
+        client: httpx.AsyncClient | None = None,
+    ) -> list[SourceJobPosting]:
         if client is not None:
             return await self._fetch(client)
 
@@ -31,7 +36,9 @@ class GreenhouseAdapter:
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
-            raise IngestionError(f"Greenhouse fetch failed for board {self.board_token}") from exc
+            raise IngestionError(
+                f"Greenhouse fetch failed for board {self.board_token}"
+            ) from exc
 
         return self.parse_payload(payload)
 
@@ -42,7 +49,11 @@ class GreenhouseAdapter:
         return [self._parse_job(item) for item in payload["jobs"]]
 
     def _parse_job(self, item: Any) -> SourceJobPosting:
-        if not isinstance(item, dict) or item.get("id") is None or not item.get("title"):
+        if (
+            not isinstance(item, dict)
+            or item.get("id") is None
+            or not item.get("title")
+        ):
             raise IngestionError("Greenhouse job is missing an id or title")
 
         location = item.get("location") or {}
@@ -50,7 +61,8 @@ class GreenhouseAdapter:
         offices = item.get("offices") or []
 
         return SourceJobPosting(
-            source="greenhouse",
+            source=self.source_name,
+            source_scope=self.source_scope,
             source_job_id=str(item["id"]),
             company=self.company,
             title=str(item["title"]),

@@ -14,17 +14,30 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 
 ## Current milestone: M1 — Job Intelligence
 
-The M0 foundation is complete. M1 is turning that foundation into a persistent job-intelligence system that can ingest, normalize, deduplicate, store, query, and rank real job postings.
+The M0 foundation is complete. M1 now provides a persistent job-intelligence pipeline that can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
 
 ### M0 foundation includes
 
 - typed domain models for jobs, candidate profiles, facts, and applications;
 - an evidence-backed `TruthStore`;
 - a transparent baseline job scoring model;
-- a small FastAPI service;
+- a FastAPI service;
 - example candidate configuration;
-- unit tests and GitHub Actions CI;
+- unit/integration tests and GitHub Actions CI;
 - architecture documentation designed for later agent and ML expansion.
+
+### M1 capabilities implemented
+
+- Greenhouse and Lever public-feed adapters;
+- canonical normalization with stable source identities and audit metadata;
+- deterministic cross-source duplicate fingerprints;
+- PostgreSQL persistence with Alembic migrations;
+- paginated job search/filter API;
+- baseline candidate-specific job ranking;
+- idempotent source refresh with stale-posting deactivation;
+- JSON ingestion metrics and scheduler-friendly CLI execution.
+
+The remaining M1 intelligence item is embedding-assisted near-duplicate detection.
 
 ## Planned releases
 
@@ -32,10 +45,10 @@ The M0 foundation is complete. M1 is turning that foundation into a persistent j
 
 - job-source adapters;
 - normalized job schema;
-- deduplication;
+- deterministic and semantic deduplication;
 - baseline ranking;
 - persistent PostgreSQL storage;
-- dashboard/API views.
+- query/ranking API views.
 
 ### M2 — Application Intelligence
 
@@ -112,13 +125,34 @@ docker compose up -d postgres
 alembic upgrade head
 ```
 
+## Job ingestion
+
+Copy the sanitized source example to a private runtime configuration and replace the placeholders with public ATS identifiers:
+
+```bash
+cp data/examples/sources.example.yaml data/private/sources.yaml
+jobops-ingest --config data/private/sources.yaml
+```
+
+The ingestion command is scheduler-friendly: run it from cron, a container scheduler, or another workflow runner. Each source refresh is transactional. A failed fetch does not deactivate previously stored jobs; stale postings are marked inactive only after a successful refresh of the same source scope.
+
 ## Example API usage
+
+Health check:
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-Score a sample job:
+List active remote jobs with known compensation that can reach at least $90,000:
+
+```bash
+curl "http://127.0.0.1:8000/v1/jobs?work_mode=remote&min_salary=90000"
+```
+
+The `/v1/jobs` endpoint supports pagination plus title, company, location, work mode, minimum salary, source, and active-status filters.
+
+Score one sample job:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/score \
@@ -126,20 +160,24 @@ curl -X POST http://127.0.0.1:8000/v1/score \
   -d @data/examples/score-request.example.json
 ```
 
+`POST /v1/jobs/rank` accepts a candidate profile plus job filters, evaluates a bounded filtered candidate pool with the transparent baseline scorer, and returns jobs ordered by score.
+
 ## Repository layout
 
 ```text
 src/jobops/
-  agents/       orchestration interfaces and future specialized agents
-  api/          FastAPI application
-  db/           persistence models, sessions, and repository interfaces
-  knowledge/    evidence-backed candidate truth store
-  matching/     scoring, feature generation, future learned rankers
-  models/       typed domain models
+  agents/         orchestration interfaces and future specialized agents
+  api/            FastAPI health, scoring, job-query, and ranking endpoints
+  db/             persistence models, sessions, and repository interfaces
+  ingestion/      ATS adapters, source config, refresh runner, and CLI
+  knowledge/      evidence-backed candidate truth store
+  matching/       scoring, feature generation, future learned rankers
+  models/         typed domain/query models
+  normalization/  canonicalization and duplicate detection
 
-data/examples/  sanitized runnable sample data
-docs/           architecture and engineering decisions
-tests/          unit and integration tests
+data/examples/    sanitized runnable sample data
+docs/             architecture and engineering decisions
+tests/            unit and integration tests
 ```
 
 ## Safety and privacy

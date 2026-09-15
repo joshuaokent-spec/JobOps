@@ -20,6 +20,9 @@ dependencies = [
   "uvicorn[standard]>=0.30,<1",
 ]
 
+[project.scripts]
+jobops-ingest = "jobops.ingestion.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2,<9",
