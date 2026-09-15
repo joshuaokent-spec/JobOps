@@ -1,7 +1,7 @@
 import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from jobops.models.browser import BrowserFormSnapshot, BrowserPageActionDescriptor, BrowserPageSnapshot
+from jobops.models.browser import BrowserPageSnapshot
 
 _SAFE_ATTRIBUTION_KEYS = {
     "source",
