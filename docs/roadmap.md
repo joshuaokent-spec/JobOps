@@ -27,7 +27,7 @@
 - [x] Resume evidence schema
 - [x] Resume-family selector
 - [x] Retrieval layer
-- [ ] Question classifier
+- [x] Question classifier
 - [ ] LLM provider abstraction
 - [ ] Narrative-answer drafting agent
 - [ ] Evidence verifier
