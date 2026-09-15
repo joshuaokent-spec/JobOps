@@ -12,6 +12,11 @@ from jobops.models.resume_evidence import (
     RoleFamily,
     VerifiedResumePayload,
 )
+from jobops.models.resume_selection import (
+    ResumeFamilyFeatures,
+    ResumeFamilyScore,
+    ResumeFamilySelection,
+)
 from jobops.models.scoring import ScoreBreakdown, ScoreRequest
 
 __all__ = [
@@ -27,6 +32,9 @@ __all__ = [
     "ResumeEvidenceBase",
     "ResumeEvidenceItem",
     "ResumeFamilyDefinition",
+    "ResumeFamilyFeatures",
+    "ResumeFamilyScore",
+    "ResumeFamilySelection",
     "RoleFamily",
     "ScoreBreakdown",
     "ScoreRequest",

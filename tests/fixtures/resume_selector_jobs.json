@@ -1,0 +1,37 @@
+[
+  {
+    "job_id": "selector-data-engineer",
+    "company": "Example Data Co",
+    "title": "Senior Data Engineer",
+    "description": "Build reliable Python and SQL ETL pipelines and data quality workflows.",
+    "required_skills": ["Python", "SQL", "ETL", "Data Pipelines"]
+  },
+  {
+    "job_id": "selector-data-scientist",
+    "company": "Example Science Co",
+    "title": "Data Scientist",
+    "description": "Develop predictive models and experiments with Python and feature engineering.",
+    "required_skills": ["Python", "Machine Learning", "Feature Engineering"]
+  },
+  {
+    "job_id": "selector-ml-engineer",
+    "company": "Example AI Co",
+    "title": "Machine Learning Engineer",
+    "description": "Build and evaluate production machine-learning systems in Python.",
+    "required_skills": ["Python", "Machine Learning", "Evaluation"]
+  },
+  {
+    "job_id": "selector-analytics",
+    "company": "Example BI Co",
+    "title": "Business Intelligence Analyst",
+    "description": "Use SQL and data quality practices to produce operational analytics.",
+    "required_skills": ["SQL", "Data Quality"]
+  },
+  {
+    "job_id": "selector-ambiguous",
+    "company": "Example General Co",
+    "title": "Technical Specialist",
+    "description": "Support cross-functional technical projects.",
+    "required_skills": []
+  }
+]

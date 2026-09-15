@@ -25,7 +25,7 @@
 ## M2 — Application Intelligence
 
 - [x] Resume evidence schema
-- [ ] Resume-family selector
+- [x] Resume-family selector
 - [ ] Retrieval layer
 - [ ] Question classifier
 - [ ] LLM provider abstraction
