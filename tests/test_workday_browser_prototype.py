@@ -1,3 +1,5 @@
+from html import escape
+
 import pytest
 
 from jobops.browser import WorkdayBrowserPrototype, WorkdayDetectionError
@@ -56,6 +58,52 @@ def test_prepares_my_information_without_advancing_workday() -> None:
     assert result.submission_allowed is False
 
 
+def test_resume_step_is_distinct_from_experience_step() -> None:
+    html = """
+    <!doctype html>
+    <html><body>
+      <h1>Apply with a Resume</h1>
+      <form id="resume-step">
+        <label for="resume">Resume/CV</label>
+        <input id="resume" type="file" name="resume">
+      </form>
+      <button id="next" type="button">Next</button>
+    </body></html>
+    """
+
+    result = WorkdayBrowserPrototype().prepare_html(html, base_url=_BASE_URL)
+
+    assert result.step.category is WorkdayStepCategory.RESUME
+    semantics = {item.semantic for item in result.semantic_mapping.mappings}
+    assert ApplicationFieldSemantic.RESUME in semantics
+    assert WorkdayBlockedOperation.NEXT in {
+        action.operation for action in result.blocked_actions
+    }
+
+
+def test_my_experience_preserves_step_specific_documents_and_education() -> None:
+    html = """
+    <!doctype html>
+    <html><body>
+      <h1>My Experience</h1>
+      <form id="experience-step">
+        <label for="school">School or University</label>
+        <input id="school" name="school">
+        <label for="supporting">Resume/CV or supporting document</label>
+        <input id="supporting" type="file" name="resume">
+      </form>
+      <button id="next" type="button">Next</button>
+    </body></html>
+    """
+
+    result = WorkdayBrowserPrototype().prepare_html(html, base_url=_BASE_URL)
+
+    assert result.step.category is WorkdayStepCategory.EXPERIENCE
+    semantics = {item.semantic for item in result.semantic_mapping.mappings}
+    assert ApplicationFieldSemantic.EDUCATION in semantics
+    assert ApplicationFieldSemantic.RESUME in semantics
+
+
 def test_application_questions_reuse_existing_red_and_yellow_policy() -> None:
     html = """
     <!doctype html>
@@ -110,6 +158,50 @@ def test_voluntary_disclosures_and_terms_remain_human_review() -> None:
     assert by_semantic[ApplicationFieldSemantic.CONSENT_ATTESTATION].review_band is ReviewBand.RED
 
 
+def test_terms_step_keeps_consent_red_and_blocks_progression() -> None:
+    html = """
+    <!doctype html>
+    <html><body>
+      <h2>Terms and Conditions</h2>
+      <form id="terms">
+        <label for="consent">I agree to the candidate privacy and consent terms.</label>
+        <input id="consent" type="checkbox" name="candidateConsent">
+      </form>
+      <button id="next" type="button">Next</button>
+    </body></html>
+    """
+
+    result = WorkdayBrowserPrototype().prepare_html(html, base_url=_BASE_URL)
+
+    assert result.step.category is WorkdayStepCategory.TERMS_CONSENT
+    by_semantic = {item.semantic: item for item in result.semantic_mapping.mappings}
+    consent = by_semantic[ApplicationFieldSemantic.CONSENT_ATTESTATION]
+    assert consent.route is HandlingRoute.HUMAN_REVIEW
+    assert consent.review_band is ReviewBand.RED
+    assert WorkdayBlockedOperation.NEXT in {
+        action.operation for action in result.blocked_actions
+    }
+
+
+def test_candidate_home_account_access_is_modeled_but_not_executed() -> None:
+    html = """
+    <!doctype html>
+    <html><body>
+      <h1>Candidate Home - Sign In</h1>
+      <a id="signin" href="/candidate-home/login">Sign In</a>
+      <button id="create" type="button">Create Account</button>
+    </body></html>
+    """
+
+    result = WorkdayBrowserPrototype().prepare_html(html, base_url=_BASE_URL)
+
+    assert result.step.category is WorkdayStepCategory.ACCOUNT_ACCESS
+    operations = {action.operation for action in result.blocked_actions}
+    assert WorkdayBlockedOperation.SIGN_IN in operations
+    assert WorkdayBlockedOperation.CREATE_ACCOUNT in operations
+    assert result.live_writes_allowed is False
+
+
 def test_final_review_can_be_classified_without_a_form_and_submit_stays_blocked() -> None:
     html = """
     <!doctype html>
@@ -125,6 +217,37 @@ def test_final_review_can_be_classified_without_a_form_and_submit_stays_blocked(
     assert result.step.category is WorkdayStepCategory.FINAL_REVIEW
     assert result.semantic_mapping.mappings == []
     assert result.preparation_plan.submission_allowed is False
+    assert [action.operation for action in result.blocked_actions] == [
+        WorkdayBlockedOperation.SUBMIT
+    ]
+
+
+def test_embedded_final_review_inherits_verified_parent_workday_context() -> None:
+    child = """
+    <!doctype html>
+    <html><body>
+      <h1>Review Your Application</h1>
+      <button id="submit" type="button">Submit Application</button>
+    </body></html>
+    """
+    iframe = escape(child, quote=True)
+    outer = f"""
+    <!doctype html>
+    <html><body>
+      <h1>Data Engineer</h1>
+      <iframe title="Application" srcdoc="{iframe}"></iframe>
+    </body></html>
+    """
+
+    result = WorkdayBrowserPrototype().prepare_html(outer, base_url=_BASE_URL)
+
+    assert result.detection.detected is True
+    assert result.detection.embedded is True
+    assert result.detection.document_index == 1
+    assert result.detection.tenant == "acme"
+    assert result.detection.site == "External"
+    assert result.detection.requisition_id == "REQ-123"
+    assert result.step.category is WorkdayStepCategory.FINAL_REVIEW
     assert [action.operation for action in result.blocked_actions] == [
         WorkdayBlockedOperation.SUBMIT
     ]
