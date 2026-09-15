@@ -1,4 +1,9 @@
 from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
+from jobops.models.evidence_retrieval import (
+    EvidenceRetrievalFeatures,
+    EvidenceRetrievalHit,
+    EvidenceRetrievalResult,
+)
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.resume_evidence import (
     EvidenceKind,
@@ -25,6 +30,9 @@ __all__ = [
     "EvidenceKind",
     "EvidenceMetric",
     "EvidenceQuery",
+    "EvidenceRetrievalFeatures",
+    "EvidenceRetrievalHit",
+    "EvidenceRetrievalResult",
     "EvidenceSource",
     "EvidenceSourceKind",
     "FactRisk",
