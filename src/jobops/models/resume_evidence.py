@@ -177,6 +177,7 @@ class EvidenceQuery(BaseModel):
     role_families: list[RoleFamily] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+    since: date | None = None
     verified_only: bool = True
 
 

@@ -113,6 +113,11 @@ class ResumeEvidenceStore:
         wanted_tags = {tag.casefold() for tag in query.tags}
         if wanted_tags and not item_tags & wanted_tags:
             return False
+
+        if query.since is not None:
+            item_date = item.end_date or item.start_date
+            if item_date is not None and item_date < query.since:
+                return False
         return True
 
     def _require_family(self, family_id: str) -> ResumeFamilyDefinition:

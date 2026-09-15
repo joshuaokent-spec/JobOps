@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -88,6 +89,40 @@ def test_store_filters_by_role_skill_and_verification() -> None:
     assert "project-data-lake-etl" in ids
     assert "skill-python" in ids
     assert "draft-cloud-claim" not in ids
+
+
+def test_recency_filter_excludes_old_dated_evidence_but_keeps_evergreen_items() -> None:
+    source = EvidenceSource(
+        source_id="source-1",
+        kind=EvidenceSourceKind.DOCUMENT,
+        label="Evidence document",
+    )
+    old_project = ResumeEvidenceItem(
+        evidence_id="old-project",
+        kind=EvidenceKind.PROJECT,
+        claim="Built an older pipeline.",
+        end_date=date(2020, 1, 1),
+        source_refs=["source-1"],
+        verified=True,
+    )
+    evergreen_skill = ResumeEvidenceItem(
+        evidence_id="skill-python",
+        kind=EvidenceKind.SKILL,
+        claim="Uses Python.",
+        skills=["Python"],
+        source_refs=["source-1"],
+        verified=True,
+    )
+    store = ResumeEvidenceStore(
+        ResumeEvidenceBase(
+            candidate_id="sample",
+            sources=[source],
+            items=[old_project, evergreen_skill],
+        )
+    )
+
+    matches = store.query(EvidenceQuery(since=date(2024, 1, 1)))
+    assert [item.evidence_id for item in matches] == ["skill-python"]
 
 
 def test_family_pool_respects_pins_exclusions_and_verification() -> None:
