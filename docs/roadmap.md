@@ -30,7 +30,7 @@
 - [x] Question classifier
 - [x] LLM provider abstraction
 - [x] Narrative-answer drafting agent
-- [ ] Evidence verifier
+- [x] Evidence verifier
 - [ ] Approval queue
 
 ## M3 — Browser Automation
