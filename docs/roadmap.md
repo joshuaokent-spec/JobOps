@@ -19,8 +19,8 @@
 - [x] Deterministic duplicate detection
 - [ ] Embedding-assisted near-duplicate detection
 - [x] PostgreSQL repositories and migrations
-- [ ] Job search/filter API
-- [ ] Scheduled ingestion pipeline
+- [x] Job search/filter API
+- [x] Scheduled ingestion pipeline
 
 ## M2 — Application Intelligence
 
