@@ -136,6 +136,14 @@ def test_blocks_inflated_numeric_claim() -> None:
     assert "unsupported_numeric_claim" in {finding.code for finding in result.findings}
 
 
+def test_blocks_numeric_claim_before_sentence_punctuation() -> None:
+    result = EvidenceVerifier().verify(
+        _request("I built the Python and SQL ETL pipeline and improved throughput by 900.")
+    )
+    assert result.status is VerificationStatus.BLOCK
+    assert "unsupported_numeric_claim" in {finding.code for finding in result.findings}
+
+
 def test_blocks_unsupported_technology_claim() -> None:
     result = EvidenceVerifier().verify(
         _request("I used Python, SQL, and Kubernetes to build the ETL pipeline.")
