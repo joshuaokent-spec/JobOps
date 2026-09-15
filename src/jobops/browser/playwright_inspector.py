@@ -146,8 +146,26 @@ _INSPECTION_SCRIPT = r"""
     };
   });
 
+  const headings = Array.from(document.querySelectorAll("h1, h2, h3, h4, [role='heading']"))
+    .map(element => normalize(element.innerText || element.textContent))
+    .filter(Boolean);
+
+  const pageActions = Array.from(document.querySelectorAll("button, a[href], [role='button']"))
+    .map(element => ({
+      tag: element.tagName.toLowerCase(),
+      text: normalize(element.innerText || element.textContent || element.value),
+      accessible_name: normalize(element.getAttribute("aria-label")),
+      href: element.tagName.toLowerCase() === "a"
+        ? normalize(element.getAttribute("href"))
+        : null,
+      selector: selectorFor(element),
+      disabled: Boolean(element.disabled || element.getAttribute("aria-disabled") === "true"),
+    }));
+
   return {
     title: document.title,
+    headings,
+    page_actions: pageActions,
     forms,
   };
 }
@@ -155,7 +173,7 @@ _INSPECTION_SCRIPT = r"""
 
 
 class PlaywrightBrowserInspector:
-    """Inspect application forms in an isolated, submission-disabled browser context."""
+    """Inspect application UI in an isolated, submission-disabled browser context."""
 
     def __init__(self, config: BrowserSessionConfig | None = None) -> None:
         self.config = config or BrowserSessionConfig()
@@ -164,7 +182,7 @@ class PlaywrightBrowserInspector:
         return self.inspect_url_documents(url)[0]
 
     def inspect_url_documents(self, url: str) -> list[BrowserPageSnapshot]:
-        """Inspect the top document plus child frames that contain forms."""
+        """Inspect the top document plus meaningful child-frame application UI."""
         self._assert_allowed_url(url)
         blocked = {"count": 0}
         navigation = {"complete": False}
@@ -198,7 +216,7 @@ class PlaywrightBrowserInspector:
         *,
         base_url: str = "https://fixture.invalid/",
     ) -> list[BrowserPageSnapshot]:
-        """Inspect controlled HTML and any child frames containing forms."""
+        """Inspect controlled HTML and meaningful child-frame application UI."""
         self._assert_allowed_url(base_url)
         blocked = {"count": 0}
         navigation = {"complete": True}
@@ -283,7 +301,10 @@ class PlaywrightBrowserInspector:
                 blocked_requests=blocked_requests,
                 url_override=root_url_override if index == 0 else None,
             )
-            if index == 0 or snapshot.forms:
+            meaningful_child_ui = bool(
+                snapshot.forms or snapshot.page_actions or snapshot.headings
+            )
+            if index == 0 or meaningful_child_ui:
                 snapshots.append(snapshot)
         return snapshots
 
@@ -306,6 +327,8 @@ class PlaywrightBrowserInspector:
             {
                 "url": url_override or document.url,
                 "title": payload.get("title", ""),
+                "headings": payload.get("headings", []),
+                "page_actions": payload.get("page_actions", []),
                 "forms": forms,
                 "submit_controls": submit_controls,
                 "blocked_network_requests": blocked_requests,

@@ -11,12 +11,12 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **ML where prediction helps, LLMs where language helps:** ranking and outcome prediction are modeled separately from natural-language generation.
 - **Local-first language inference:** candidate material and ambiguous UI classification can use an on-device Foundry Local model without coupling agents to a specific runtime.
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
-- **Auditable decisions:** every score, generated answer, verification finding, approval decision, browser mapping, ATS detection, and preparation step should be traceable.
-- **Browser safety by construction:** browser inspection and preparation are separate from consequential submission.
+- **Auditable decisions:** every score, generated answer, verification finding, approval decision, browser mapping, ATS detection, workflow state, blocked action, and preparation step should be traceable.
+- **Browser safety by construction:** browser inspection and preparation are separate from consequential writes and submission.
 
 ## Current milestone: M3 — Browser Automation
 
-M1 Job Intelligence and M2 Application Intelligence are complete. M3 now has a guarded Playwright browser abstraction, semantic form-field understanding, and two ATS-specific browser preparation adapters, with real-Chromium CI coverage across these boundaries.
+M1 Job Intelligence and M2 Application Intelligence are complete. M3 now has a guarded Playwright browser abstraction, semantic form-field understanding, Greenhouse and Lever browser preparation adapters, and a stateful Workday workflow prototype, with real-Chromium CI coverage across these boundaries.
 
 JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
 
@@ -24,7 +24,9 @@ M3.1 can open employer/ATS pages in isolated Playwright contexts, inventory nati
 
 M3.3 adds a Greenhouse browser preparation adapter that can detect Greenhouse-hosted and embedded/iFrame application experiences, isolate the application form from unrelated careers-page controls, preserve Greenhouse job/source metadata when present, and route the selected form through the existing semantic mapper and review policy.
 
-M3.4 adds the same vendor-specific preparation layer for Lever. It recognizes Lever posting/apply URL structure and verified Lever form actions, preserves account/site, posting UUID, `lever-source`, and `lever-origin` metadata, supports hosted and embedded forms, rejects generic `/apply` false positives, and preserves Red review for EEO, authorization, consent, and other consequential controls. Submit-capable controls remain blocked and no live form fill or application submission path exists yet.
+M3.4 adds the same vendor-specific preparation layer for Lever. It recognizes Lever posting/apply URL structure and verified Lever form actions, preserves account/site, posting UUID, `lever-source`, and `lever-origin` metadata, supports hosted and embedded forms, rejects generic `/apply` false positives, and preserves Red review for EEO, authorization, consent, and other consequential controls.
+
+M3.5 treats Workday differently: as a stateful multi-step application wizard. The shared browser snapshot now inventories page headings and page-level actions in addition to forms, and the Workday prototype classifies visible states such as resume entry, My Information, My Experience, application questions, voluntary disclosures, terms/consent, Candidate Home/account access, and final review. `Next`, `Save for Later`, account creation/sign-in, Apply with LinkedIn, and final Submit are surfaced as typed blocked operations rather than executable clicks. This matters because Workday can persist an application draft when the wizard advances. The prototype performs no live Workday writes.
 
 ### M1 capabilities implemented
 
@@ -65,16 +67,17 @@ M3.4 adds the same vendor-specific preparation layer for Lever. It recognizes Le
 ### M3 capabilities implemented so far
 
 - optional Playwright browser dependency rather than a mandatory base-runtime dependency;
-- typed browser session, page, form, field, option, structural-plan, semantic-mapping, semantic-plan, and ATS-preparation contracts;
+- typed browser session, page, form, field, option, structural-plan, semantic-mapping, semantic-plan, ATS-preparation, Workday-state, and blocked-action contracts;
 - isolated non-persistent browser contexts with service workers blocked by default;
 - native form inventory for input, textarea, select, checkbox, radio, button, and file controls;
+- page-level heading and action inventory for stateful wizard/application UI;
 - label, accessible-name, required/disabled state, option, and stable-selector extraction;
 - deterministic structural dry-run planning for fill/select/choose/upload/review/skip operations;
 - submit-capable controls explicitly represented as `blocked_submit` rather than executable actions;
 - dry-run blocking of `POST`, `PUT`, `PATCH`, and `DELETE` browser requests;
 - post-load document-navigation blocking while the submission gate is closed;
 - DOM guards for submit events, `form.submit()`, and `form.requestSubmit()`;
-- guarded top-document plus child-frame form inspection for embedded ATS applications;
+- guarded top-document plus meaningful child-frame inspection for embedded ATS applications and wizard states;
 - deterministic semantic mapping for identity/contact fields, professional links, documents, preferences, legal/consequential fields, narrative prompts, demographics, consent/attestations, unknowns, and submit controls;
 - explicit confidence, matched signals, and ambiguity handling rather than silent guesses;
 - direct reuse of M2 `QuestionCategory`, `HandlingRoute`, and Green/Yellow/Red review policy inside browser automation;
@@ -91,10 +94,16 @@ M3.4 adds the same vendor-specific preparation layer for Lever. It recognizes Le
 - preservation of site/account token, posting UUID, `lever-source`, and `lever-origin` metadata when available;
 - explicit rejection of generic external `/apply` forms and Lever posting pages without an application form;
 - cross-ATS consent/attestation semantics routed Red to human review;
-- LinkedIn browser navigation kept outside the ATS automation layer while LinkedIn profile URL remains a valid candidate data field;
-- real headless Chromium tests against controlled application forms in GitHub Actions, including browser-snapshot-to-semantic-policy and ATS-specific integration.
+- Workday-specific workflow-state modeling without collapsing the wizard into one form;
+- Workday step classification for account access, resume, contact information, experience, application questions, voluntary disclosures, terms/consent, final review, and unknown states;
+- preservation of available Workday tenant/site/locale/requisition/source metadata as audit context;
+- explicit blocked Workday actions for Next/Continue, Save for Later, Sign In, Create Account, Apply with LinkedIn, Submit, and other progression;
+- Workday job-detail false-positive rejection rather than treating global Apply/Sign In controls as application-wizard proof;
+- embedded Workday child-frame state support with verified parent-context inheritance and no-form final-review coverage;
+- LinkedIn account/browser automation kept outside the ATS automation layer while LinkedIn profile URL remains a valid candidate data field;
+- real headless Chromium tests against controlled application/wizard states in GitHub Actions, including browser-snapshot-to-semantic-policy and ATS-specific integration.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, and `docs/lever-browser-adapter.md` for the current system contracts.
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, `docs/lever-browser-adapter.md`, and `docs/workday-browser-prototype.md` for the current system contracts.
 
 ## Releases
 
@@ -124,10 +133,9 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-
 - semantic generic form-field detection and M2 policy mapping — complete;
 - Greenhouse browser preparation adapter — complete;
 - Lever browser preparation adapter — complete;
-- Workday research/prototype — next;
-- resume/document upload;
-- application preparation;
-- screenshot/audit artifacts;
+- Workday research/stateful prototype — complete;
+- controlled resume/document field preparation — future executable slice;
+- screenshot/audit artifacts — next;
 - separate explicit final submit gate.
 
 ### M4 — Learning System
@@ -176,8 +184,10 @@ Application Question -> Risk/Review Classifier --------------+          |
                                        top document       child frames
                                                \             /
                                                              v
-                                                Structural Form Snapshot
-                                                             |
+                                       Structural + UI State Snapshot
+                                          /                  \
+                                  native forms        headings/actions
+                                          \                  /
                                                              v
                                                Semantic Field Mapping
                                               /          |           \
@@ -188,17 +198,18 @@ Application Question -> Risk/Review Classifier --------------+          |
                                                              |
                                                              v
                                             Semantic Preparation Plan
+                                                /                  \
+                                               v                    v
+                                Greenhouse / Lever Adapters    Workday Prototype
+                               detect/isolate/metadata       detect/classify state
+                                               \                    /
+                                                \       blocked actions
+                                                 \                  /
+                                                             X
+                                             no live ATS writes / no submit
                                                              |
                                                              v
-                                      Greenhouse / Lever ATS Adapters
-                                   (detect / isolate / preserve metadata)
-                                                             |
-                                                             X  no live fill/submit in M3.4
-                                                             |
-                                                             v
-                                           Workday / Other Adapters
-                                                             |
-                                                   Explicit Submit Gate
+                                                Future Explicit Gates
                                                              |
                                                              v
                                                   Application Tracking
@@ -258,7 +269,7 @@ pip install -e ".[dev,browser]"
 python -m playwright install chromium
 ```
 
-M3.1 exposes guarded structural inspection. M3.2 adds deterministic-first semantic field understanding plus an optional local-model fallback for unresolved controls. M3.3 adds Greenhouse-specific detection, application-form isolation, metadata preservation, and embedded-frame support. M3.4 adds the parallel Lever preparation adapter plus a generic Red consent/attestation semantic. All of these layers reuse the generic browser and semantic-policy boundaries and produce non-executing plans: they do not fill or submit live applications. See `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, and `docs/lever-browser-adapter.md` for the browser-policy contracts.
+M3.1 exposes guarded structural inspection. M3.2 adds deterministic-first semantic field understanding plus an optional local-model fallback for unresolved controls. M3.3 adds Greenhouse-specific detection, application-form isolation, metadata preservation, and embedded-frame support. M3.4 adds the parallel Lever preparation adapter plus a generic Red consent/attestation semantic. M3.5 extends the shared snapshot with headings/page actions and adds a Workday-specific read-only workflow-state prototype because Workday progression can itself be consequential. All of these layers reuse the generic browser and semantic-policy boundaries. They do not submit live applications, and the Workday prototype does not advance or save the wizard. See `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, `docs/lever-browser-adapter.md`, and `docs/workday-browser-prototype.md` for the browser-policy contracts.
 
 ## Job ingestion
 
@@ -323,14 +334,14 @@ src/jobops/
   agents/         narrative drafting, verification, orchestration interfaces
   api/            FastAPI health, jobs, scoring, ranking, and approval endpoints
   approvals/      human-review state machine
-  browser/        guarded Playwright inspection, semantic mapping, ATS adapters, dry-run planning
+  browser/        guarded Playwright inspection, semantic mapping, ATS/workflow adapters, dry-run planning
   db/             PostgreSQL models, sessions, repositories, approval persistence
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS feed adapters, source config, refresh runner, and CLI
   knowledge/      TruthStore, resume evidence, retrieval, question policy
   llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
-  models/         typed domain/query/evidence/retrieval/LLM/browser/mapping/ATS/approval models
+  models/         typed domain/query/evidence/retrieval/LLM/browser/mapping/ATS/workflow/approval models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -343,8 +354,8 @@ tests/            unit, integration, and controlled browser tests
 
 Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, ATS-specific detection cannot lower review requirements, consent/attestation controls cannot be answered automatically, and the current M3 browser layers cannot execute live application submission.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, ATS-specific detection cannot lower review requirements, consent/attestation controls cannot be answered automatically, and the current M3 browser layers cannot execute live application submission. Workday wizard progression, draft persistence, Candidate Home authentication/account creation, and Apply with LinkedIn also remain non-executable in M3.5.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, semantic UI understanding, reusable ATS-specific adaptation, iframe handling, source-attribution preservation, real-browser CI testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, semantic UI understanding, reusable ATS-specific adaptation, stateful workflow modeling, iframe handling, source-attribution preservation, consequential-action analysis, real-browser CI testing, observability, and analytics all live behind one product boundary.

@@ -77,9 +77,20 @@ class BrowserFormSnapshot(BaseModel):
     fields: list[BrowserFieldDescriptor] = Field(default_factory=list)
 
 
+class BrowserPageActionDescriptor(BaseModel):
+    tag: str
+    text: str | None = None
+    accessible_name: str | None = None
+    href: str | None = None
+    selector: str
+    disabled: bool = False
+
+
 class BrowserPageSnapshot(BaseModel):
     url: str
     title: str
+    headings: list[str] = Field(default_factory=list)
+    page_actions: list[BrowserPageActionDescriptor] = Field(default_factory=list)
     forms: list[BrowserFormSnapshot] = Field(default_factory=list)
     submit_controls: int = Field(default=0, ge=0)
     blocked_network_requests: int = Field(default=0, ge=0)

@@ -39,7 +39,7 @@
 - [x] Generic semantic form-field detector
 - [x] Greenhouse browser adapter
 - [x] Lever browser adapter
-- [ ] Workday research/prototype
+- [x] Workday research/stateful prototype
 - [ ] Screenshot/audit artifacts
 - [ ] Explicit submit gate
 

@@ -10,6 +10,7 @@ from jobops.browser.greenhouse import GreenhouseBrowserAdapter, GreenhouseDetect
 from jobops.browser.lever import LeverBrowserAdapter, LeverDetectionError
 from jobops.browser.planner import BrowserDryRunPlanner
 from jobops.browser.semantic_planner import SemanticPreparationPlanner
+from jobops.browser.workday import WorkdayBrowserPrototype, WorkdayDetectionError
 
 __all__ = [
     "AssistedSemanticFieldClassifier",
@@ -24,4 +25,6 @@ __all__ = [
     "SemanticFieldClassifier",
     "SemanticPreparationPlanner",
     "SubmissionBlockedError",
+    "WorkdayBrowserPrototype",
+    "WorkdayDetectionError",
 ]
