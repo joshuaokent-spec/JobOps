@@ -92,6 +92,10 @@ class BaselineJobScorer:
         minimum = candidate.minimum_salary
         if minimum is None:
             return 1.0
+        if job.salary_currency not in (None, "USD"):
+            return 0.6
+        if job.salary_interval not in (None, "year"):
+            return 0.6
         if job.salary_max is None and job.salary_min is None:
             return 0.6
         ceiling = job.salary_max if job.salary_max is not None else job.salary_min
