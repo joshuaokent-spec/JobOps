@@ -60,6 +60,18 @@ _RULES: Final[tuple[_SemanticRule, ...]] = (
         0.99,
     ),
     _rule(
+        ApplicationFieldSemantic.CONSENT_ATTESTATION,
+        r"\b(?:consent|i certify|certify that|attest|acknowledge|privacy policy|data retention|"
+        r"retain my data|agree to (?:the )?terms|terms and conditions)\b",
+        0.99,
+        allowed_kinds={
+            BrowserFieldKind.CHECKBOX,
+            BrowserFieldKind.RADIO,
+            BrowserFieldKind.SELECT,
+            BrowserFieldKind.TEXT,
+        },
+    ),
+    _rule(
         ApplicationFieldSemantic.WORK_AUTHORIZATION,
         r"\b(?:work authorization|authorized to work|authorised to work|legally (?:authorized|"
         r"authorised|eligible) to work|right to work|work eligibility)\b",
@@ -359,6 +371,7 @@ class SemanticFieldClassifier:
             ApplicationFieldSemantic.SECURITY_CLEARANCE,
             ApplicationFieldSemantic.PRIOR_EMPLOYMENT,
             ApplicationFieldSemantic.DEMOGRAPHIC_SELF_ID,
+            ApplicationFieldSemantic.CONSENT_ATTESTATION,
             ApplicationFieldSemantic.SALARY_EXPECTATION,
             ApplicationFieldSemantic.RELOCATION,
             ApplicationFieldSemantic.WORK_MODE,
@@ -407,6 +420,7 @@ class SemanticFieldClassifier:
             ApplicationFieldSemantic.PRIOR_EMPLOYMENT,
             ApplicationFieldSemantic.SECURITY_CLEARANCE,
             ApplicationFieldSemantic.DEMOGRAPHIC_SELF_ID,
+            ApplicationFieldSemantic.CONSENT_ATTESTATION,
         }:
             return (
                 QuestionCategory.LEGAL_SENSITIVE,
