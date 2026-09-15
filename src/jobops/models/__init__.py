@@ -6,6 +6,13 @@ from jobops.models.application_question import (
     ReviewPriority,
 )
 from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
+from jobops.models.draft_verification import (
+    DraftVerificationRequest,
+    DraftVerificationResult,
+    VerificationFinding,
+    VerificationSeverity,
+    VerificationStatus,
+)
 from jobops.models.evidence_retrieval import (
     EvidenceRetrievalFeatures,
     EvidenceRetrievalHit,
@@ -47,6 +54,8 @@ __all__ = [
     "ChatRequest",
     "ChatResponse",
     "ChatRole",
+    "DraftVerificationRequest",
+    "DraftVerificationResult",
     "EvidenceKind",
     "EvidenceMetric",
     "EvidenceQuery",
@@ -75,6 +84,9 @@ __all__ = [
     "ScoreBreakdown",
     "ScoreRequest",
     "TokenUsage",
+    "VerificationFinding",
+    "VerificationSeverity",
+    "VerificationStatus",
     "VerifiedResumePayload",
     "WorkMode",
 ]
