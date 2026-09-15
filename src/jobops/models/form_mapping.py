@@ -36,6 +36,7 @@ class ApplicationFieldSemantic(StrEnum):
     SECURITY_CLEARANCE = "security_clearance"
     NARRATIVE_QUESTION = "narrative_question"
     DEMOGRAPHIC_SELF_ID = "demographic_self_identification"
+    CONSENT_ATTESTATION = "consent_attestation"
     SUBMIT_CONTROL = "submit_control"
     UNKNOWN = "unknown"
 
