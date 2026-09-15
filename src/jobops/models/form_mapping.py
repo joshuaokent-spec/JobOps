@@ -46,6 +46,14 @@ class MappingSource(StrEnum):
     UNRESOLVED = "unresolved"
 
 
+class SemanticPreparationOperation(StrEnum):
+    RESOLVE_FACT = "resolve_fact"
+    DRAFT_WITH_REVIEW = "draft_with_review"
+    HUMAN_REVIEW = "human_review"
+    ESCALATE = "escalate"
+    BLOCKED_SUBMIT = "blocked_submit"
+
+
 class SemanticFieldMapping(BaseModel):
     field: BrowserFieldDescriptor
     semantic: ApplicationFieldSemantic
@@ -67,4 +75,20 @@ class SemanticPageMapping(BaseModel):
     mapped_fields: int = Field(ge=0)
     unresolved_fields: int = Field(ge=0)
     sensitive_fields: int = Field(ge=0)
+    submission_allowed: bool = False
+
+
+class SemanticPreparationAction(BaseModel):
+    mapping: SemanticFieldMapping
+    operation: SemanticPreparationOperation
+    reason: str
+
+
+class SemanticPreparationPlan(BaseModel):
+    url: str
+    actions: list[SemanticPreparationAction] = Field(default_factory=list)
+    fact_resolution_fields: int = Field(ge=0)
+    review_fields: int = Field(ge=0)
+    unresolved_fields: int = Field(ge=0)
+    submit_controls: int = Field(ge=0)
     submission_allowed: bool = False
