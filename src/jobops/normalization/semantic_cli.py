@@ -1,5 +1,4 @@
 import argparse
-import json
 from pathlib import Path
 from typing import Any
 
@@ -74,7 +73,9 @@ def _evaluate(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="jobops-semantic-dedup",
-        description="Scan JobOps postings for semantic duplicate candidates or evaluate thresholds.",
+        description=(
+            "Scan JobOps postings for semantic duplicate candidates or evaluate thresholds."
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
