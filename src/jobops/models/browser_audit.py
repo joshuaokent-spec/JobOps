@@ -45,4 +45,5 @@ class BrowserAuditManifest(BaseModel):
 class BrowserInspectionCapture(BaseModel):
     documents: list[BrowserPageSnapshot] = Field(default_factory=list)
     screenshot_png: bytes
+    browser_engine: BrowserEngine = BrowserEngine.CHROMIUM
     redacted_dom_values: int = Field(default=0, ge=0)
