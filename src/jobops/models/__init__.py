@@ -20,6 +20,7 @@ from jobops.models.browser import (
     BrowserFieldKind,
     BrowserFormSnapshot,
     BrowserOption,
+    BrowserPageActionDescriptor,
     BrowserPageSnapshot,
     BrowserSessionConfig,
     DryRunAction,
@@ -77,6 +78,14 @@ from jobops.models.resume_selection import (
     ResumeFamilySelection,
 )
 from jobops.models.scoring import ScoreBreakdown, ScoreRequest
+from jobops.models.workday_browser import (
+    WorkdayBlockedAction,
+    WorkdayBlockedOperation,
+    WorkdayDetection,
+    WorkdayPreparationResult,
+    WorkdayStepCategory,
+    WorkdayWizardStep,
+)
 
 __all__ = [
     "ApplicationFieldSemantic",
@@ -92,6 +101,7 @@ __all__ = [
     "BrowserFieldKind",
     "BrowserFormSnapshot",
     "BrowserOption",
+    "BrowserPageActionDescriptor",
     "BrowserPageSnapshot",
     "BrowserSessionConfig",
     "CandidateFact",
@@ -147,4 +157,10 @@ __all__ = [
     "VerificationStatus",
     "VerifiedResumePayload",
     "WorkMode",
+    "WorkdayBlockedAction",
+    "WorkdayBlockedOperation",
+    "WorkdayDetection",
+    "WorkdayPreparationResult",
+    "WorkdayStepCategory",
+    "WorkdayWizardStep",
 ]
