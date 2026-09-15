@@ -13,8 +13,8 @@
 
 ## M1 — Job Intelligence
 
-- [ ] Greenhouse ingestion adapter
-- [ ] Lever ingestion adapter
+- [x] Greenhouse ingestion adapter
+- [x] Lever ingestion adapter
 - [ ] Canonical normalization pipeline
 - [ ] Deterministic duplicate detection
 - [ ] Embedding-assisted near-duplicate detection
