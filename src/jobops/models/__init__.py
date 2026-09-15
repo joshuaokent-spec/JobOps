@@ -49,6 +49,7 @@ from jobops.models.form_mapping import (
 )
 from jobops.models.greenhouse_browser import GreenhouseDetection, GreenhousePreparationResult
 from jobops.models.job import JobPosting, WorkMode
+from jobops.models.lever_browser import LeverDetection, LeverPreparationResult
 from jobops.models.llm import (
     ChatMessage,
     ChatRequest,
@@ -116,6 +117,8 @@ __all__ = [
     "GreenhousePreparationResult",
     "HandlingRoute",
     "JobPosting",
+    "LeverDetection",
+    "LeverPreparationResult",
     "LLMProviderStatus",
     "MappingSource",
     "NarrativeDraftRequest",
