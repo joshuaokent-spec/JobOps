@@ -24,7 +24,7 @@
 
 ## M2 — Application Intelligence
 
-- [ ] Resume evidence schema
+- [x] Resume evidence schema
 - [ ] Resume-family selector
 - [ ] Retrieval layer
 - [ ] Question classifier

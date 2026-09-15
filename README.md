@@ -16,15 +16,7 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 
 M1 Job Intelligence is complete. JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
 
-### M0 foundation includes
-
-- typed domain models for jobs, candidate profiles, facts, and applications;
-- an evidence-backed `TruthStore`;
-- a transparent baseline job scoring model;
-- a FastAPI service;
-- example candidate configuration;
-- unit/integration tests and GitHub Actions CI;
-- architecture documentation designed for later agent and ML expansion.
+M2 has started with the evidence-grounded candidate knowledge model. A master `ResumeEvidenceBase` stores factual career evidence once, with provenance, role-family tags, skills, metrics, verification state, and retrieval-ready text. Role-specific resume families select from that shared evidence rather than duplicating facts across static resume variants.
 
 ### M1 capabilities implemented
 
@@ -39,7 +31,17 @@ M1 Job Intelligence is complete. JobOps can ingest supported ATS feeds, normaliz
 - idempotent source refresh with stale-posting deactivation;
 - JSON ingestion metrics and scheduler-friendly CLI execution.
 
-Semantic duplicate suggestions remain reviewable evidence: JobOps never silently merges or deletes source postings based on an embedding score.
+### M2 capabilities implemented so far
+
+- typed career-evidence entities for experience, projects, education, certifications, skills, and achievements;
+- explicit provenance sources and verification state;
+- role-family, skill, tag, and recency-aware deterministic filtering;
+- resume-family definitions over one master evidence base;
+- retrieval-ready canonical evidence text;
+- a verified-payload guard that blocks unknown, excluded, or unverified evidence;
+- sanitized public example evidence with no production candidate PII.
+
+See `docs/resume-evidence.md` for the boundary between atomic `TruthStore` facts, richer resume evidence, and future generated wording.
 
 ## Planned releases
 
@@ -87,25 +89,27 @@ Job Sources
 Ingestion -> Normalization -> Deterministic + Semantic Deduplication -> Job Store
                                                                   |
                                                                   v
-Candidate Profile -> Truth Store -> Matching / Ranking
-                                         |
-                                         v
-                              Application Orchestrator
-                               /        |         \
-                              v         v          v
-                        Resume Agent  Q&A Agent  Verifier
-                               \        |         /
-                                v       v        v
-                                  Approval Queue
-                                         |
-                                         v
-                                  Browser Adapter
-                                         |
-                                         v
-                               Application Tracking
-                                         |
-                                         v
-                              Analytics / ML Feedback
+Candidate Profile -> TruthStore -----------+
+                                             |
+Resume Evidence -> ResumeEvidenceStore -----+--> Matching / Retrieval / Ranking
+                                             |
+                                             v
+                                  Application Orchestrator
+                                   /        |         \
+                                  v         v          v
+                            Resume Agent  Q&A Agent  Verifier
+                                   \        |         /
+                                    v       v        v
+                                      Approval Queue
+                                             |
+                                             v
+                                      Browser Adapter
+                                             |
+                                             v
+                                   Application Tracking
+                                             |
+                                             v
+                                  Analytics / ML Feedback
 ```
 
 ## Quick start
@@ -136,53 +140,44 @@ cp data/examples/sources.example.yaml data/private/sources.yaml
 jobops-ingest --config data/private/sources.yaml
 ```
 
-The ingestion command is scheduler-friendly: run it from cron, a container scheduler, or another workflow runner. Each source refresh is transactional. A failed fetch does not deactivate previously stored jobs; stale postings are marked inactive only after a successful refresh of the same source scope.
+Each source refresh is transactional. A failed fetch does not deactivate previously stored jobs; stale postings are marked inactive only after a successful refresh of the same source scope.
 
 ## Semantic duplicate detection
 
-The semantic layer is optional so the default development/CI environment does not download a neural model:
+Install the optional local ML dependency only when semantic embeddings are needed:
 
 ```bash
 pip install -e ".[ml]"
 ```
 
-Scan stored jobs for reviewable duplicate candidates:
+Scan stored jobs:
 
 ```bash
 jobops-semantic-dedup scan --threshold 0.84
 ```
 
-Evaluate threshold behavior on the sanitized labeled example set:
+Evaluate threshold behavior:
 
 ```bash
 jobops-semantic-dedup evaluate \
   --dataset data/evaluation/semantic-duplicate-pairs.example.json
 ```
 
-See `docs/semantic-deduplication.md` for representation, candidate generation, threshold tradeoffs, and audit behavior.
+## Candidate evidence
+
+A sanitized master-evidence example lives at:
+
+```text
+data/examples/resume-evidence.example.yaml
+```
+
+The evidence layer treats canonical claims and generated resume wording differently. Generated text may transform verified evidence later in M2, but it may not become a new candidate fact merely because a model wrote it.
 
 ## Example API usage
 
-Health check:
-
 ```bash
 curl http://127.0.0.1:8000/health
-```
-
-List active remote jobs with known compensation that can reach at least $90,000:
-
-```bash
 curl "http://127.0.0.1:8000/v1/jobs?work_mode=remote&min_salary=90000"
-```
-
-The `/v1/jobs` endpoint supports pagination plus title, company, location, work mode, minimum salary, source, and active-status filters.
-
-Score one sample job:
-
-```bash
-curl -X POST http://127.0.0.1:8000/v1/score \
-  -H "Content-Type: application/json" \
-  -d @data/examples/score-request.example.json
 ```
 
 `POST /v1/jobs/rank` accepts a candidate profile plus job filters, evaluates a bounded filtered candidate pool with the transparent baseline scorer, and returns jobs ordered by score.
@@ -196,9 +191,9 @@ src/jobops/
   db/             persistence models, sessions, and repository interfaces
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
-  knowledge/      evidence-backed candidate truth store
+  knowledge/      TruthStore plus resume evidence access
   matching/       scoring, feature generation, future learned rankers
-  models/         typed domain/query models
+  models/         typed domain/query/evidence models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -215,4 +210,4 @@ JobOps should never invent qualifications, certifications, work authorization, l
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, retrieval, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, retrieval, provenance-aware knowledge modeling, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
