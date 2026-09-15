@@ -47,6 +47,7 @@ from jobops.models.form_mapping import (
     SemanticPreparationOperation,
     SemanticPreparationPlan,
 )
+from jobops.models.greenhouse_browser import GreenhouseDetection, GreenhousePreparationResult
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.llm import (
     ChatMessage,
@@ -111,6 +112,8 @@ __all__ = [
     "EvidenceSource",
     "EvidenceSourceKind",
     "FactRisk",
+    "GreenhouseDetection",
+    "GreenhousePreparationResult",
     "HandlingRoute",
     "JobPosting",
     "LLMProviderStatus",
