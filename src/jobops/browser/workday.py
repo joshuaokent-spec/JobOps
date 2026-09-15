@@ -105,6 +105,7 @@ class WorkdayBrowserPrototype:
         score = 0.0
 
         workday_host = self._is_workday_host(hostname)
+        candidate_controls = self._has_candidate_application_controls(page)
         if workday_host:
             score += 0.65
             reasons.append("Workday external-career host")
@@ -117,9 +118,9 @@ class WorkdayBrowserPrototype:
         if self._has_write_progression_action(page):
             score += 0.15
             reasons.append("write-relevant wizard progression control")
-        if page.forms:
+        if candidate_controls:
             score += 0.10
-            reasons.append("application controls present")
+            reasons.append("candidate-entry controls present")
 
         metadata = self._metadata(parsed, hostname)
         if metadata["source"]:
@@ -349,10 +350,42 @@ class WorkdayBrowserPrototype:
     @classmethod
     def _has_application_context(cls, page: BrowserPageSnapshot) -> bool:
         return bool(
-            page.forms
+            cls._has_candidate_application_controls(page)
             or cls._has_wizard_heading(page)
             or cls._has_write_progression_action(page)
         )
+
+    @staticmethod
+    def _has_candidate_application_controls(page: BrowserPageSnapshot) -> bool:
+        signals = " ".join(
+            value.casefold()
+            for form in page.forms
+            for field in form.fields
+            for value in (
+                field.label,
+                field.accessible_name,
+                field.name,
+                field.placeholder,
+            )
+            if value
+        )
+        resume_signals = ("resume", "résumé", "curriculum vitae", "resume/cv")
+        if any(token in signals for token in resume_signals):
+            return True
+        candidate_tokens = (
+            "first name",
+            "last name",
+            "full name",
+            "email",
+            "phone",
+            "address",
+            "work authorization",
+            "sponsorship",
+            "gender",
+            "disability",
+            "consent",
+        )
+        return sum(token in signals for token in candidate_tokens) >= 2
 
     @staticmethod
     def _has_wizard_heading(page: BrowserPageSnapshot) -> bool:
