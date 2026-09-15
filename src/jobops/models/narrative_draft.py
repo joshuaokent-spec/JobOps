@@ -14,7 +14,7 @@ class NarrativeDraftRequest(BaseModel):
     job: JobPosting
     family_id: str = Field(min_length=1)
     evidence: EvidenceRetrievalResult
-    word_limit: int = Field(default=180, ge=25, le=500)
+    word_limit: int = Field(default=180, ge=10, le=500)
     tone: str = Field(default="professional, concise, specific", min_length=1, max_length=200)
 
 
