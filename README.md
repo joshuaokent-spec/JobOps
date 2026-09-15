@@ -16,13 +16,15 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 
 ## Current milestone: M3 — Browser Automation
 
-M1 Job Intelligence and M2 Application Intelligence are complete. M3 now has a guarded Playwright browser abstraction, semantic form-field understanding, and its first ATS-specific browser adapter, with real-Chromium CI coverage across these boundaries.
+M1 Job Intelligence and M2 Application Intelligence are complete. M3 now has a guarded Playwright browser abstraction, semantic form-field understanding, and two ATS-specific browser preparation adapters, with real-Chromium CI coverage across these boundaries.
 
 JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
 
-M3.1 can open employer/ATS pages in isolated Playwright contexts, inventory native form controls, and produce a typed dry-run structural plan. M3.2 maps those controls into application semantics such as contact data, resume/CV, professional links, salary, sponsorship, work authorization, narrative prompts, and EEO/self-identification fields. Those mappings reuse the existing Green/Yellow/Red M2 policy and produce a second non-executing semantic preparation plan.
+M3.1 can open employer/ATS pages in isolated Playwright contexts, inventory native form controls, and produce a typed dry-run structural plan. M3.2 maps those controls into application semantics such as contact data, resume/CV, professional links, salary, sponsorship, work authorization, narrative prompts, EEO/self-identification fields, and consent/attestation controls. Those mappings reuse the existing Green/Yellow/Red M2 policy and produce a second non-executing semantic preparation plan.
 
-M3.3 adds a Greenhouse browser preparation adapter that can detect Greenhouse-hosted and embedded/iFrame application experiences, isolate the application form from unrelated careers-page controls, preserve Greenhouse job/source metadata when present, and route the selected form through the existing semantic mapper and review policy. Submit-capable controls remain blocked and no live form fill or application submission path exists yet.
+M3.3 adds a Greenhouse browser preparation adapter that can detect Greenhouse-hosted and embedded/iFrame application experiences, isolate the application form from unrelated careers-page controls, preserve Greenhouse job/source metadata when present, and route the selected form through the existing semantic mapper and review policy.
+
+M3.4 adds the same vendor-specific preparation layer for Lever. It recognizes Lever posting/apply URL structure and verified Lever form actions, preserves account/site, posting UUID, `lever-source`, and `lever-origin` metadata, supports hosted and embedded forms, rejects generic `/apply` false positives, and preserves Red review for EEO, authorization, consent, and other consequential controls. Submit-capable controls remain blocked and no live form fill or application submission path exists yet.
 
 ### M1 capabilities implemented
 
@@ -73,7 +75,7 @@ M3.3 adds a Greenhouse browser preparation adapter that can detect Greenhouse-ho
 - post-load document-navigation blocking while the submission gate is closed;
 - DOM guards for submit events, `form.submit()`, and `form.requestSubmit()`;
 - guarded top-document plus child-frame form inspection for embedded ATS applications;
-- deterministic semantic mapping for identity/contact fields, professional links, documents, preferences, legal/consequential fields, narrative prompts, demographics, unknowns, and submit controls;
+- deterministic semantic mapping for identity/contact fields, professional links, documents, preferences, legal/consequential fields, narrative prompts, demographics, consent/attestations, unknowns, and submit controls;
 - explicit confidence, matched signals, and ambiguity handling rather than silent guesses;
 - direct reuse of M2 `QuestionCategory`, `HandlingRoute`, and Green/Yellow/Red review policy inside browser automation;
 - optional provider-neutral model-assisted classification only for unresolved controls;
@@ -84,10 +86,15 @@ M3.3 adds a Greenhouse browser preparation adapter that can detect Greenhouse-ho
 - isolation of Greenhouse application forms from unrelated careers-page search/decorative forms;
 - preservation of `gh_jid`, `gh_src`, and board-token metadata when available;
 - fail-closed rejection of generic non-Greenhouse forms by the Greenhouse adapter;
+- Lever context detection using host, posting UUID, `/apply`, source/origin, verified form action, and recognizable candidate-control evidence;
+- Lever-hosted and embedded/iFrame application preparation support using controlled real-browser fixtures;
+- preservation of site/account token, posting UUID, `lever-source`, and `lever-origin` metadata when available;
+- explicit rejection of generic external `/apply` forms and Lever posting pages without an application form;
+- cross-ATS consent/attestation semantics routed Red to human review;
 - LinkedIn browser navigation kept outside the ATS automation layer while LinkedIn profile URL remains a valid candidate data field;
 - real headless Chromium tests against controlled application forms in GitHub Actions, including browser-snapshot-to-semantic-policy and ATS-specific integration.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, and `docs/greenhouse-browser-adapter.md` for the current system contracts.
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, and `docs/lever-browser-adapter.md` for the current system contracts.
 
 ## Releases
 
@@ -116,8 +123,8 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-
 - guarded Playwright abstraction — complete;
 - semantic generic form-field detection and M2 policy mapping — complete;
 - Greenhouse browser preparation adapter — complete;
-- Lever browser adapter — next;
-- Workday research/prototype;
+- Lever browser preparation adapter — complete;
+- Workday research/prototype — next;
 - resume/document upload;
 - application preparation;
 - screenshot/audit artifacts;
@@ -183,13 +190,13 @@ Application Question -> Risk/Review Classifier --------------+          |
                                             Semantic Preparation Plan
                                                              |
                                                              v
-                                            Greenhouse ATS Adapter
-                                      (detect / isolate / preserve metadata)
+                                      Greenhouse / Lever ATS Adapters
+                                   (detect / isolate / preserve metadata)
                                                              |
-                                                             X  no live fill/submit in M3.3
+                                                             X  no live fill/submit in M3.4
                                                              |
                                                              v
-                                         Lever / Workday / Other Adapters
+                                           Workday / Other Adapters
                                                              |
                                                    Explicit Submit Gate
                                                              |
@@ -251,7 +258,7 @@ pip install -e ".[dev,browser]"
 python -m playwright install chromium
 ```
 
-M3.1 exposes guarded structural inspection. M3.2 adds deterministic-first semantic field understanding plus an optional local-model fallback for unresolved controls. M3.3 adds Greenhouse-specific detection, application-form isolation, metadata preservation, and embedded-frame support while continuing to reuse the generic browser and semantic-policy layers. These stages produce non-executing plans: they do not fill or submit live applications. See `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, and `docs/greenhouse-browser-adapter.md` for the browser-policy contracts.
+M3.1 exposes guarded structural inspection. M3.2 adds deterministic-first semantic field understanding plus an optional local-model fallback for unresolved controls. M3.3 adds Greenhouse-specific detection, application-form isolation, metadata preservation, and embedded-frame support. M3.4 adds the parallel Lever preparation adapter plus a generic Red consent/attestation semantic. All of these layers reuse the generic browser and semantic-policy boundaries and produce non-executing plans: they do not fill or submit live applications. See `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, and `docs/lever-browser-adapter.md` for the browser-policy contracts.
 
 ## Job ingestion
 
@@ -336,8 +343,8 @@ tests/            unit, integration, and controlled browser tests
 
 Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, ATS-specific detection cannot lower review requirements, and the current M3 browser layers cannot execute live application submission.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, ATS-specific detection cannot lower review requirements, consent/attestation controls cannot be answered automatically, and the current M3 browser layers cannot execute live application submission.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, semantic UI understanding, ATS-specific adaptation, iframe handling, real-browser CI testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, semantic UI understanding, reusable ATS-specific adaptation, iframe handling, source-attribution preservation, real-browser CI testing, observability, and analytics all live behind one product boundary.
