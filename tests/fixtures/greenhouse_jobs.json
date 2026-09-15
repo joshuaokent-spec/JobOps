@@ -1,0 +1,18 @@
+{
+  "jobs": [
+    {
+      "id": 127817,
+      "internal_job_id": 144381,
+      "title": "Data Engineer",
+      "updated_at": "2026-09-14T10:55:28-04:00",
+      "requisition_id": "DE-50",
+      "location": {"name": "Remote - US"},
+      "absolute_url": "https://boards.greenhouse.io/example/jobs/127817",
+      "language": "en",
+      "content": "<p>Build reliable data pipelines.</p>",
+      "departments": [{"id": 1, "name": "Data"}],
+      "offices": [{"id": 2, "name": "Remote", "location": "United States"}]
+    }
+  ],
+  "meta": {"total": 1}
+}
