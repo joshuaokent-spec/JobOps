@@ -16,7 +16,7 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 
 M1 Job Intelligence is complete. JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
 
-M2 has started with the evidence-grounded candidate knowledge model. A master `ResumeEvidenceBase` stores factual career evidence once, with provenance, role-family tags, skills, metrics, verification state, and retrieval-ready text. Role-specific resume families select from that shared evidence rather than duplicating facts across static resume variants.
+M2 now has three foundations in place: a provenance-aware master resume evidence model, an explainable resume-family selector, and a bounded evidence-retrieval layer for job-grounded drafting. The system can choose the most appropriate resume family and retrieve a small verified evidence context without inventing qualifications.
 
 ### M1 capabilities implemented
 
@@ -33,15 +33,17 @@ M2 has started with the evidence-grounded candidate knowledge model. A master `R
 
 ### M2 capabilities implemented so far
 
-- typed career-evidence entities for experience, projects, education, certifications, skills, and achievements;
-- explicit provenance sources and verification state;
-- role-family, skill, tag, and recency-aware deterministic filtering;
-- resume-family definitions over one master evidence base;
-- retrieval-ready canonical evidence text;
-- a verified-payload guard that blocks unknown, excluded, or unverified evidence;
-- sanitized public example evidence with no production candidate PII.
+- typed career evidence with provenance, verification state, metrics, role-family tags, skills, and retrieval-ready text;
+- resume-family definitions over one master evidence base rather than duplicated factual resumes;
+- verified-payload guardrails that block unknown, excluded, or unverified evidence;
+- explainable resume-family selection with typed feature vectors, confidence/fallback behavior, and verified evidence pools;
+- bounded evidence retrieval using lexical, skill, family, and specificity features;
+- optional semantic retrieval through the same pluggable embedding interface used by M1;
+- evidence-kind diversity and stable ranking;
+- preservation of original evidence IDs and source references through retrieval;
+- sanitized public candidate evidence with no production PII.
 
-See `docs/resume-evidence.md` for the boundary between atomic `TruthStore` facts, richer resume evidence, and future generated wording.
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, and `docs/evidence-retrieval.md` for the candidate-knowledge and retrieval contracts.
 
 ## Planned releases
 
@@ -59,6 +61,7 @@ See `docs/resume-evidence.md` for the boundary between atomic `TruthStore` facts
 - candidate knowledge base;
 - resume-family selection;
 - evidence retrieval;
+- question classification and routing;
 - LLM-generated drafts;
 - answer verification;
 - approval queue.
@@ -89,27 +92,30 @@ Job Sources
 Ingestion -> Normalization -> Deterministic + Semantic Deduplication -> Job Store
                                                                   |
                                                                   v
-Candidate Profile -> TruthStore -----------+
-                                             |
-Resume Evidence -> ResumeEvidenceStore -----+--> Matching / Retrieval / Ranking
-                                             |
-                                             v
-                                  Application Orchestrator
-                                   /        |         \
-                                  v         v          v
-                            Resume Agent  Q&A Agent  Verifier
-                                   \        |         /
-                                    v       v        v
-                                      Approval Queue
-                                             |
-                                             v
-                                      Browser Adapter
-                                             |
-                                             v
-                                   Application Tracking
-                                             |
-                                             v
-                                  Analytics / ML Feedback
+Candidate Profile -> TruthStore ---------------------------+
+                                                             |
+Resume Evidence -> ResumeEvidenceStore -> Family Selector --+--> Evidence Retrieval
+                                                             |          |
+                                                             |          v
+                                                             |   bounded verified context
+                                                             |          |
+                                                             v          v
+                                                     Application Orchestrator
+                                                      /        |         \
+                                                     v         v          v
+                                               Resume Agent  Q&A Agent  Verifier
+                                                      \        |         /
+                                                       v       v        v
+                                                         Approval Queue
+                                                                |
+                                                                v
+                                                         Browser Adapter
+                                                                |
+                                                                v
+                                                      Application Tracking
+                                                                |
+                                                                v
+                                                     Analytics / ML Feedback
 ```
 
 ## Quick start
@@ -124,7 +130,7 @@ uvicorn jobops.api.main:app --reload
 
 Then open `http://127.0.0.1:8000/docs`.
 
-Initialize or upgrade the PostgreSQL schema with:
+Initialize or upgrade PostgreSQL with:
 
 ```bash
 docker compose up -d postgres
@@ -132,8 +138,6 @@ alembic upgrade head
 ```
 
 ## Job ingestion
-
-Copy the sanitized source example to a private runtime configuration and replace the placeholders with public ATS identifiers:
 
 ```bash
 cp data/examples/sources.example.yaml data/private/sources.yaml
@@ -144,21 +148,14 @@ Each source refresh is transactional. A failed fetch does not deactivate previou
 
 ## Semantic duplicate detection
 
-Install the optional local ML dependency only when semantic embeddings are needed:
+Install optional local ML dependencies only when semantic embeddings are needed:
 
 ```bash
 pip install -e ".[ml]"
 ```
 
-Scan stored jobs:
-
 ```bash
 jobops-semantic-dedup scan --threshold 0.84
-```
-
-Evaluate threshold behavior:
-
-```bash
 jobops-semantic-dedup evaluate \
   --dataset data/evaluation/semantic-duplicate-pairs.example.json
 ```
@@ -171,7 +168,7 @@ A sanitized master-evidence example lives at:
 data/examples/resume-evidence.example.yaml
 ```
 
-The evidence layer treats canonical claims and generated resume wording differently. Generated text may transform verified evidence later in M2, but it may not become a new candidate fact merely because a model wrote it.
+Canonical claims and generated resume wording are intentionally different concepts. Generated text may later transform verified evidence, but it may not become a new candidate fact merely because a model wrote it.
 
 ## Example API usage
 
@@ -191,9 +188,9 @@ src/jobops/
   db/             persistence models, sessions, and repository interfaces
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
-  knowledge/      TruthStore plus resume evidence access
-  matching/       scoring, feature generation, future learned rankers
-  models/         typed domain/query/evidence models
+  knowledge/      TruthStore, resume evidence, and evidence retrieval
+  matching/       job scoring, resume-family selection, future learned rankers
+  models/         typed domain/query/evidence/retrieval models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -210,4 +207,4 @@ JobOps should never invent qualifications, certifications, work authorization, l
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, retrieval, provenance-aware knowledge modeling, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, provenance-aware RAG, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
