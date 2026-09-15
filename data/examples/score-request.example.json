@@ -1,0 +1,26 @@
+{
+  "candidate": {
+    "candidate_id": "sample-candidate",
+    "target_roles": ["Data Engineer", "Data Scientist", "AI Engineer"],
+    "skills": ["Python", "SQL", "Pandas", "FastAPI", "PostgreSQL"],
+    "years_experience": 2,
+    "preferred_work_modes": ["remote", "hybrid"],
+    "preferred_locations": ["Michigan"],
+    "minimum_salary": 70000,
+    "facts": []
+  },
+  "job": {
+    "job_id": "example-001",
+    "company": "Example Analytics",
+    "title": "Data Engineer",
+    "description": "Build production data pipelines and APIs.",
+    "location": "Remote",
+    "work_mode": "remote",
+    "salary_min": 85000,
+    "salary_max": 110000,
+    "required_skills": ["Python", "SQL", "PostgreSQL"],
+    "preferred_skills": ["FastAPI"],
+    "minimum_years_experience": 2,
+    "source": "example"
+  }
+}
