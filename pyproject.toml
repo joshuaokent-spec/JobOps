@@ -22,6 +22,7 @@ dependencies = [
 
 [project.scripts]
 jobops-ingest = "jobops.ingestion.cli:main"
+jobops-semantic-dedup = "jobops.normalization.semantic_cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -29,6 +30,9 @@ dev = [
   "pytest-asyncio>=0.24,<2",
   "pytest-cov>=5,<7",
   "ruff>=0.6,<1",
+]
+ml = [
+  "sentence-transformers>=6.0,<7",
 ]
 
 [tool.hatch.build.targets.wheel]

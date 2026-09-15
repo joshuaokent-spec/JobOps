@@ -12,9 +12,9 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
 - **Auditable decisions:** every score and generated answer should be explainable from stored evidence.
 
-## Current milestone: M1 — Job Intelligence
+## Current milestone: M2 — Application Intelligence
 
-The M0 foundation is complete. M1 now provides a persistent job-intelligence pipeline that can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
+M1 Job Intelligence is complete. JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
 
 ### M0 foundation includes
 
@@ -31,17 +31,19 @@ The M0 foundation is complete. M1 now provides a persistent job-intelligence pip
 - Greenhouse and Lever public-feed adapters;
 - canonical normalization with stable source identities and audit metadata;
 - deterministic cross-source duplicate fingerprints;
+- embedding-assisted semantic near-duplicate detection with a pluggable provider interface;
+- labeled threshold evaluation with precision, recall, F1, and confusion counts;
 - PostgreSQL persistence with Alembic migrations;
 - paginated job search/filter API;
 - baseline candidate-specific job ranking;
 - idempotent source refresh with stale-posting deactivation;
 - JSON ingestion metrics and scheduler-friendly CLI execution.
 
-The remaining M1 intelligence item is embedding-assisted near-duplicate detection.
+Semantic duplicate suggestions remain reviewable evidence: JobOps never silently merges or deletes source postings based on an embedding score.
 
 ## Planned releases
 
-### M1 — Job Intelligence
+### M1 — Job Intelligence — complete
 
 - job-source adapters;
 - normalized job schema;
@@ -82,9 +84,9 @@ The remaining M1 intelligence item is embedding-assisted near-duplicate detectio
 Job Sources
     |
     v
-Ingestion -> Normalization -> Deduplication -> Job Store
-                                         |
-                                         v
+Ingestion -> Normalization -> Deterministic + Semantic Deduplication -> Job Store
+                                                                  |
+                                                                  v
 Candidate Profile -> Truth Store -> Matching / Ranking
                                          |
                                          v
@@ -136,6 +138,29 @@ jobops-ingest --config data/private/sources.yaml
 
 The ingestion command is scheduler-friendly: run it from cron, a container scheduler, or another workflow runner. Each source refresh is transactional. A failed fetch does not deactivate previously stored jobs; stale postings are marked inactive only after a successful refresh of the same source scope.
 
+## Semantic duplicate detection
+
+The semantic layer is optional so the default development/CI environment does not download a neural model:
+
+```bash
+pip install -e ".[ml]"
+```
+
+Scan stored jobs for reviewable duplicate candidates:
+
+```bash
+jobops-semantic-dedup scan --threshold 0.84
+```
+
+Evaluate threshold behavior on the sanitized labeled example set:
+
+```bash
+jobops-semantic-dedup evaluate \
+  --dataset data/evaluation/semantic-duplicate-pairs.example.json
+```
+
+See `docs/semantic-deduplication.md` for representation, candidate generation, threshold tradeoffs, and audit behavior.
+
 ## Example API usage
 
 Health check:
@@ -169,13 +194,15 @@ src/jobops/
   agents/         orchestration interfaces and future specialized agents
   api/            FastAPI health, scoring, job-query, and ranking endpoints
   db/             persistence models, sessions, and repository interfaces
+  embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
   knowledge/      evidence-backed candidate truth store
   matching/       scoring, feature generation, future learned rankers
   models/         typed domain/query models
-  normalization/  canonicalization and duplicate detection
+  normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
+data/evaluation/  labeled evaluation fixtures
 docs/             architecture and engineering decisions
 tests/            unit and integration tests
 ```
@@ -188,4 +215,4 @@ JobOps should never invent qualifications, certifications, work authorization, l
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, learned models, retrieval, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, retrieval, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.

@@ -1,0 +1,152 @@
+[
+  {
+    "pair_id": "positive-data-engineer-title-drift",
+    "duplicate": true,
+    "left": {
+      "job_id": "eval-gh-1",
+      "company": "Northstar Analytics",
+      "title": "Senior Data Engineer",
+      "description": "Build Python and SQL ETL pipelines on AWS. Own warehouse reliability and orchestration.",
+      "location": "Remote - United States",
+      "work_mode": "remote",
+      "required_skills": ["Python", "SQL", "AWS", "ETL"],
+      "source": "greenhouse",
+      "source_job_id": "gh-1"
+    },
+    "right": {
+      "job_id": "eval-lv-1",
+      "company": "Northstar Analytics",
+      "title": "Sr. Data Platform Engineer",
+      "description": "Design reliable data pipelines, orchestration, and cloud warehouse services using Python, SQL, and AWS.",
+      "location": "Remote",
+      "work_mode": "remote",
+      "required_skills": ["Python", "SQL", "AWS", "Data Pipelines"],
+      "source": "lever",
+      "source_job_id": "lv-1"
+    }
+  },
+  {
+    "pair_id": "positive-ml-engineer-copy-variation",
+    "duplicate": true,
+    "left": {
+      "job_id": "eval-gh-2",
+      "company": "Vector Labs",
+      "title": "Machine Learning Engineer II",
+      "description": "Productionize predictive models, feature pipelines, model monitoring, and Python ML services.",
+      "location": "New York, NY",
+      "work_mode": "hybrid",
+      "required_skills": ["Python", "Machine Learning", "MLOps"],
+      "source": "greenhouse",
+      "source_job_id": "gh-2"
+    },
+    "right": {
+      "job_id": "eval-lv-2",
+      "company": "Vector Labs",
+      "title": "ML Engineer, Model Platform",
+      "description": "Deploy and monitor machine-learning models and feature pipelines in production Python services.",
+      "location": "New York City",
+      "work_mode": "hybrid",
+      "required_skills": ["Python", "ML", "Model Monitoring"],
+      "source": "lever",
+      "source_job_id": "lv-2"
+    }
+  },
+  {
+    "pair_id": "positive-bi-abbreviation",
+    "duplicate": true,
+    "left": {
+      "job_id": "eval-gh-3",
+      "company": "Lakeview Health",
+      "title": "Business Intelligence Analyst",
+      "description": "Build Tableau dashboards, write SQL, and partner with operations leaders on KPI reporting.",
+      "location": "Lansing, MI",
+      "work_mode": "hybrid",
+      "required_skills": ["SQL", "Tableau", "Business Intelligence"],
+      "source": "greenhouse",
+      "source_job_id": "gh-3"
+    },
+    "right": {
+      "job_id": "eval-lv-3",
+      "company": "Lakeview Health",
+      "title": "BI Analyst",
+      "description": "Create KPI dashboards and analytics for operations using SQL and Tableau.",
+      "location": "Lansing, Michigan",
+      "work_mode": "hybrid",
+      "required_skills": ["SQL", "Tableau"],
+      "source": "lever",
+      "source_job_id": "lv-3"
+    }
+  },
+  {
+    "pair_id": "negative-same-company-different-function",
+    "duplicate": false,
+    "left": {
+      "job_id": "eval-gh-4",
+      "company": "Northstar Analytics",
+      "title": "Data Engineer",
+      "description": "Develop ETL pipelines, warehouse models, and data quality checks using Python and SQL.",
+      "location": "Remote",
+      "work_mode": "remote",
+      "source": "greenhouse",
+      "source_job_id": "gh-4"
+    },
+    "right": {
+      "job_id": "eval-lv-4",
+      "company": "Northstar Analytics",
+      "title": "Product Manager",
+      "description": "Own product roadmap, customer discovery, prioritization, and cross-functional delivery.",
+      "location": "Remote",
+      "work_mode": "remote",
+      "source": "lever",
+      "source_job_id": "lv-4"
+    }
+  },
+  {
+    "pair_id": "negative-related-data-roles",
+    "duplicate": false,
+    "left": {
+      "job_id": "eval-gh-5",
+      "company": "Vector Labs",
+      "title": "Data Scientist",
+      "description": "Develop forecasting and experimentation models, analyze product behavior, and communicate findings.",
+      "location": "New York, NY",
+      "work_mode": "hybrid",
+      "source": "greenhouse",
+      "source_job_id": "gh-5"
+    },
+    "right": {
+      "job_id": "eval-lv-5",
+      "company": "Vector Labs",
+      "title": "Analytics Engineer",
+      "description": "Build dbt models, semantic layers, metrics definitions, and reliable warehouse transformations.",
+      "location": "New York, NY",
+      "work_mode": "hybrid",
+      "source": "lever",
+      "source_job_id": "lv-5"
+    }
+  },
+  {
+    "pair_id": "negative-similar-title-different-location",
+    "duplicate": false,
+    "left": {
+      "job_id": "eval-gh-6",
+      "company": "Lakeview Health",
+      "title": "Data Analyst",
+      "description": "Analyze clinical operations data, create SQL reports, and maintain Power BI dashboards for Michigan teams.",
+      "location": "Lansing, MI",
+      "work_mode": "onsite",
+      "source": "greenhouse",
+      "source_job_id": "gh-6"
+    },
+    "right": {
+      "job_id": "eval-lv-6",
+      "company": "Lakeview Health",
+      "title": "Data Analyst",
+      "description": "Analyze revenue-cycle data, create SQL reports, and maintain Power BI dashboards for Florida operations.",
+      "location": "Tampa, FL",
+      "work_mode": "onsite",
+      "source": "lever",
+      "source_job_id": "lv-6"
+    }
+  }
+]
