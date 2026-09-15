@@ -5,6 +5,14 @@ from jobops.models.application_question import (
     ReviewBand,
     ReviewPriority,
 )
+from jobops.models.approval import (
+    ApprovalCreate,
+    ApprovalDecision,
+    ApprovalItem,
+    ApprovalPage,
+    ApprovalReason,
+    ApprovalStatus,
+)
 from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
 from jobops.models.draft_verification import (
     DraftVerificationRequest,
@@ -48,6 +56,12 @@ from jobops.models.resume_selection import (
 from jobops.models.scoring import ScoreBreakdown, ScoreRequest
 
 __all__ = [
+    "ApprovalCreate",
+    "ApprovalDecision",
+    "ApprovalItem",
+    "ApprovalPage",
+    "ApprovalReason",
+    "ApprovalStatus",
     "CandidateFact",
     "CandidateProfile",
     "ChatMessage",
