@@ -58,7 +58,15 @@ class EvidenceRetriever:
 
         evidence = self.store.for_family(family_id, verified_only=True)
         semantic = self._semantic_scores(job, evidence)
-        hits = [self._score(job, family_id, item, semantic.get(item.evidence_id)) for item in evidence]
+        hits = [
+            self._score(
+                job,
+                family_id,
+                item,
+                semantic.get(item.evidence_id),
+            )
+            for item in evidence
+        ]
         hits.sort(key=lambda hit: (-hit.score, hit.evidence.evidence_id))
         selected = self._diverse_top_k(hits, limit)
 
