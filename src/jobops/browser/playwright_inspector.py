@@ -2,7 +2,7 @@ from html import escape
 from typing import Any
 from urllib.parse import urlsplit
 
-from playwright.sync_api import BrowserContext, Page, Route, sync_playwright
+from playwright.sync_api import BrowserContext, Frame, Page, Route, sync_playwright
 
 from jobops.browser.base import (
     BrowserNavigationBlockedError,
@@ -161,6 +161,10 @@ class PlaywrightBrowserInspector:
         self.config = config or BrowserSessionConfig()
 
     def inspect_url(self, url: str) -> BrowserPageSnapshot:
+        return self.inspect_url_documents(url)[0]
+
+    def inspect_url_documents(self, url: str) -> list[BrowserPageSnapshot]:
+        """Inspect the top document plus child frames that contain forms."""
         self._assert_allowed_url(url)
         blocked = {"count": 0}
         navigation = {"complete": False}
@@ -176,7 +180,7 @@ class PlaywrightBrowserInspector:
                 page.set_default_timeout(self.config.timeout_ms)
                 page.goto(url, wait_until="domcontentloaded", timeout=self.config.timeout_ms)
                 navigation["complete"] = True
-                return self._snapshot(page, blocked_requests=blocked["count"])
+                return self._snapshots(page, blocked_requests=blocked["count"])
             finally:
                 browser.close()
 
@@ -186,6 +190,15 @@ class PlaywrightBrowserInspector:
         *,
         base_url: str = "https://fixture.invalid/",
     ) -> BrowserPageSnapshot:
+        return self.inspect_html_documents(html, base_url=base_url)[0]
+
+    def inspect_html_documents(
+        self,
+        html: str,
+        *,
+        base_url: str = "https://fixture.invalid/",
+    ) -> list[BrowserPageSnapshot]:
+        """Inspect controlled HTML and any child frames containing forms."""
         self._assert_allowed_url(base_url)
         blocked = {"count": 0}
         navigation = {"complete": True}
@@ -196,6 +209,7 @@ class PlaywrightBrowserInspector:
             try:
                 context = self._new_context(browser)
                 self._install_network_guard(context, blocked, navigation)
+                context.add_init_script(_SUBMISSION_GUARD_SCRIPT)
                 page = context.new_page()
                 page.set_default_timeout(self.config.timeout_ms)
                 guarded_html = (
@@ -204,10 +218,10 @@ class PlaywrightBrowserInspector:
                 )
                 page.set_content(guarded_html, wait_until="domcontentloaded")
                 page.wait_for_timeout(25)
-                return self._snapshot(
+                return self._snapshots(
                     page,
                     blocked_requests=blocked["count"],
-                    url_override=base_url,
+                    root_url_override=base_url,
                 )
             finally:
                 browser.close()
@@ -250,14 +264,37 @@ class PlaywrightBrowserInspector:
 
         context.route("**/*", handler)
 
+    @classmethod
+    def _snapshots(
+        cls,
+        page: Page,
+        *,
+        blocked_requests: int,
+        root_url_override: str | None = None,
+    ) -> list[BrowserPageSnapshot]:
+        ordered_frames = [
+            page.main_frame,
+            *(frame for frame in page.frames if frame != page.main_frame),
+        ]
+        snapshots: list[BrowserPageSnapshot] = []
+        for index, frame in enumerate(ordered_frames):
+            snapshot = cls._snapshot(
+                frame,
+                blocked_requests=blocked_requests,
+                url_override=root_url_override if index == 0 else None,
+            )
+            if index == 0 or snapshot.forms:
+                snapshots.append(snapshot)
+        return snapshots
+
     @staticmethod
     def _snapshot(
-        page: Page,
+        document: Page | Frame,
         *,
         blocked_requests: int,
         url_override: str | None = None,
     ) -> BrowserPageSnapshot:
-        payload = page.evaluate(_INSPECTION_SCRIPT)
+        payload = document.evaluate(_INSPECTION_SCRIPT)
         forms = payload.get("forms", [])
         submit_controls = sum(
             1
@@ -267,7 +304,7 @@ class PlaywrightBrowserInspector:
         )
         return BrowserPageSnapshot.model_validate(
             {
-                "url": url_override or page.url,
+                "url": url_override or document.url,
                 "title": payload.get("title", ""),
                 "forms": forms,
                 "submit_controls": submit_controls,
