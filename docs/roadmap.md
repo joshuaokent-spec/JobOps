@@ -28,7 +28,7 @@
 - [x] Resume-family selector
 - [x] Retrieval layer
 - [x] Question classifier
-- [ ] LLM provider abstraction
+- [x] LLM provider abstraction
 - [ ] Narrative-answer drafting agent
 - [ ] Evidence verifier
 - [ ] Approval queue

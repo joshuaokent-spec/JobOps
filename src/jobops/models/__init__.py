@@ -12,6 +12,14 @@ from jobops.models.evidence_retrieval import (
     EvidenceRetrievalResult,
 )
 from jobops.models.job import JobPosting, WorkMode
+from jobops.models.llm import (
+    ChatMessage,
+    ChatRequest,
+    ChatResponse,
+    ChatRole,
+    LLMProviderStatus,
+    TokenUsage,
+)
 from jobops.models.resume_evidence import (
     EvidenceKind,
     EvidenceMetric,
@@ -34,6 +42,10 @@ from jobops.models.scoring import ScoreBreakdown, ScoreRequest
 __all__ = [
     "CandidateFact",
     "CandidateProfile",
+    "ChatMessage",
+    "ChatRequest",
+    "ChatResponse",
+    "ChatRole",
     "EvidenceKind",
     "EvidenceMetric",
     "EvidenceQuery",
@@ -45,6 +57,7 @@ __all__ = [
     "FactRisk",
     "HandlingRoute",
     "JobPosting",
+    "LLMProviderStatus",
     "QuestionCategory",
     "QuestionClassification",
     "ResumeEvidenceBase",
@@ -58,6 +71,7 @@ __all__ = [
     "RoleFamily",
     "ScoreBreakdown",
     "ScoreRequest",
+    "TokenUsage",
     "VerifiedResumePayload",
     "WorkMode",
 ]
