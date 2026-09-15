@@ -1,6 +1,6 @@
 import re
 from collections.abc import Iterable
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import SplitResult, parse_qs, urlsplit
 
 from jobops.browser.base import BrowserPolicyError
 from jobops.browser.field_classifier import SemanticFieldClassifier
@@ -77,17 +77,17 @@ class WorkdayBrowserPrototype:
         page = pages[detection.document_index]
         mapping = self.classifier.classify_page(page)
         plan = self.planner.plan(mapping)
-        step = self._classify_step(page, mapping_semantics={
-            item.semantic for item in mapping.mappings
-        })
-        blocked_actions = self._blocked_actions(page.page_actions)
+        step = self._classify_step(
+            page,
+            mapping_semantics={item.semantic for item in mapping.mappings},
+        )
         return WorkdayPreparationResult(
             detection=detection,
             step=step,
             page=page,
             semantic_mapping=mapping,
             preparation_plan=plan,
-            blocked_actions=blocked_actions,
+            blocked_actions=self._blocked_actions(page.page_actions),
             progression_allowed=False,
             live_writes_allowed=False,
             submission_allowed=False,
@@ -114,9 +114,9 @@ class WorkdayBrowserPrototype:
         if self._has_wizard_heading(page):
             score += 0.20
             reasons.append("Workday application-wizard heading")
-        if self._has_progression_action(page):
+        if self._has_write_progression_action(page):
             score += 0.15
-            reasons.append("application-wizard progression control")
+            reasons.append("write-relevant wizard progression control")
         if page.forms:
             score += 0.10
             reasons.append("application controls present")
@@ -351,7 +351,7 @@ class WorkdayBrowserPrototype:
         return bool(
             page.forms
             or cls._has_wizard_heading(page)
-            or cls._has_progression_action(page)
+            or cls._has_write_progression_action(page)
         )
 
     @staticmethod
@@ -361,14 +361,24 @@ class WorkdayBrowserPrototype:
             re.search(
                 r"\b(?:my information|my experience|application questions?|questionnaire|"
                 r"voluntary|self[- ]identif|terms|agreement|final review|review your application|"
-                r"resume|résumé|candidate home|create account)\b",
+                r"resume|résumé|candidate home|create account|sign in|log in)\b",
                 text,
             )
         )
 
     @classmethod
-    def _has_progression_action(cls, page: BrowserPageSnapshot) -> bool:
-        return any(cls._blocked_operation(action) is not None for action in page.page_actions)
+    def _has_write_progression_action(cls, page: BrowserPageSnapshot) -> bool:
+        write_relevant = {
+            WorkdayBlockedOperation.NEXT,
+            WorkdayBlockedOperation.SAVE_FOR_LATER,
+            WorkdayBlockedOperation.CREATE_ACCOUNT,
+            WorkdayBlockedOperation.APPLY_WITH_LINKEDIN,
+            WorkdayBlockedOperation.SUBMIT,
+        }
+        return any(
+            cls._blocked_operation(action) in write_relevant
+            for action in page.page_actions
+        )
 
     @staticmethod
     def _editable_semantics(
@@ -391,9 +401,8 @@ class WorkdayBrowserPrototype:
         )
 
     @classmethod
-    def _metadata(cls, parsed: object, hostname: str) -> dict[str, str | None]:
-        path = parsed.path
-        segments = [segment for segment in path.split("/") if segment]
+    def _metadata(cls, parsed: SplitResult, hostname: str) -> dict[str, str | None]:
+        segments = [segment for segment in parsed.path.split("/") if segment]
         locale: str | None = None
         site: str | None = None
         if segments and _LOCALE.match(segments[0]):
