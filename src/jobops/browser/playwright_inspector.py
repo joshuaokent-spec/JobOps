@@ -146,8 +146,26 @@ _INSPECTION_SCRIPT = r"""
     };
   });
 
+  const headings = Array.from(document.querySelectorAll("h1, h2, h3, h4, [role='heading']"))
+    .map(element => normalize(element.innerText || element.textContent))
+    .filter(Boolean);
+
+  const pageActions = Array.from(document.querySelectorAll("button, a[href], [role='button']"))
+    .map(element => ({
+      tag: element.tagName.toLowerCase(),
+      text: normalize(element.innerText || element.textContent || element.value),
+      accessible_name: normalize(element.getAttribute("aria-label")),
+      href: element.tagName.toLowerCase() === "a"
+        ? normalize(element.getAttribute("href"))
+        : null,
+      selector: selectorFor(element),
+      disabled: Boolean(element.disabled || element.getAttribute("aria-disabled") === "true"),
+    }));
+
   return {
     title: document.title,
+    headings,
+    page_actions: pageActions,
     forms,
   };
 }
@@ -306,6 +324,8 @@ class PlaywrightBrowserInspector:
             {
                 "url": url_override or document.url,
                 "title": payload.get("title", ""),
+                "headings": payload.get("headings", []),
+                "page_actions": payload.get("page_actions", []),
                 "forms": forms,
                 "submit_controls": submit_controls,
                 "blocked_network_requests": blocked_requests,
