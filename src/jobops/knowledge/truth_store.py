@@ -23,7 +23,9 @@ class TruthStore:
     """
 
     def __init__(self, profile: CandidateProfile):
-        self._facts: dict[str, CandidateFact] = {fact.key.casefold(): fact for fact in profile.facts}
+        self._facts: dict[str, CandidateFact] = {
+            fact.key.casefold(): fact for fact in profile.facts
+        }
 
     def resolve(self, key: str) -> FactResolution:
         fact = self._facts.get(key.casefold())

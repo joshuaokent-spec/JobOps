@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 from jobops.knowledge import TruthStore
+from jobops.matching import BaselineJobScorer
 from jobops.models.candidate import CandidateProfile
 from jobops.models.job import JobPosting
 from jobops.models.scoring import ScoreBreakdown
-from jobops.matching import BaselineJobScorer
 
 
 @dataclass(frozen=True, slots=True)

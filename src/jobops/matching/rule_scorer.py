@@ -30,7 +30,9 @@ class BaselineJobScorer:
     def score(self, candidate: CandidateProfile, job: JobPosting) -> ScoreBreakdown:
         title_fit = self._title_fit(candidate, job)
         required_skill_fit = self._skill_fit(candidate.skills, job.required_skills, empty_value=1.0)
-        preferred_skill_fit = self._skill_fit(candidate.skills, job.preferred_skills, empty_value=1.0)
+        preferred_skill_fit = self._skill_fit(
+            candidate.skills, job.preferred_skills, empty_value=1.0
+        )
         experience_fit = self._experience_fit(candidate, job)
         compensation_fit = self._compensation_fit(candidate, job)
         work_mode_fit = self._work_mode_fit(candidate, job)
@@ -43,7 +45,8 @@ class BaselineJobScorer:
             "compensation_fit": compensation_fit,
             "work_mode_fit": work_mode_fit,
         }
-        overall = round(sum(values[name] * weight for name, weight in self.weights.items()) * 100, 1)
+        weighted_score = sum(values[name] * weight for name, weight in self.weights.items())
+        overall = round(weighted_score * 100, 1)
 
         reasons = [
             f"Matched {required_skill_fit:.0%} of required skills.",
@@ -62,10 +65,15 @@ class BaselineJobScorer:
         job_tokens = _tokens(job.title)
         if not job_tokens:
             return 0.0
-        return max(len(job_tokens & _tokens(role)) / len(job_tokens | _tokens(role)) for role in candidate.target_roles)
+        return max(
+            len(job_tokens & _tokens(role)) / len(job_tokens | _tokens(role))
+            for role in candidate.target_roles
+        )
 
     @staticmethod
-    def _skill_fit(candidate_skills: list[str], job_skills: list[str], *, empty_value: float) -> float:
+    def _skill_fit(
+        candidate_skills: list[str], job_skills: list[str], *, empty_value: float
+    ) -> float:
         desired = _normalized_set(job_skills)
         if not desired:
             return empty_value
