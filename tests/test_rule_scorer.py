@@ -50,3 +50,18 @@ def test_missing_required_skills_lowers_score() -> None:
     assert score.experience_fit == 0.25
     assert score.work_mode_fit == 0
     assert score.overall < 60
+
+
+def test_non_usd_compensation_is_treated_as_unknown() -> None:
+    candidate = CandidateProfile(minimum_salary=90000)
+    job = JobPosting(
+        job_id="currency-1",
+        company="Example",
+        title="Data Engineer",
+        salary_min=100000,
+        salary_max=120000,
+        salary_currency="EUR",
+        salary_interval="year",
+    )
+    score = BaselineJobScorer().score(candidate, job)
+    assert score.compensation_fit == 0.6

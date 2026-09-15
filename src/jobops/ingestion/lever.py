@@ -104,4 +104,5 @@ class LeverAdapter:
                 "all_locations": categories.get("allLocations") or [],
                 "country": item.get("country"),
             },
+            raw_payload=dict(item),
         )

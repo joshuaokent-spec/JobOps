@@ -19,7 +19,10 @@ class SourceJobPosting(BaseModel):
     salary_max: float | None = None
     salary_currency: str | None = None
     salary_interval: str | None = None
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
     source_url: str | None = None
     apply_url: str | None = None
     source_updated_at: datetime | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+    raw_payload: dict[str, Any] = Field(default_factory=dict)

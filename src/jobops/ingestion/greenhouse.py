@@ -65,4 +65,5 @@ class GreenhouseAdapter:
                 "departments": departments,
                 "offices": offices,
             },
+            raw_payload=dict(item),
         )

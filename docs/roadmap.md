@@ -15,8 +15,8 @@
 
 - [x] Greenhouse ingestion adapter
 - [x] Lever ingestion adapter
-- [ ] Canonical normalization pipeline
-- [ ] Deterministic duplicate detection
+- [x] Canonical normalization pipeline
+- [x] Deterministic duplicate detection
 - [ ] Embedding-assisted near-duplicate detection
 - [x] PostgreSQL repositories and migrations
 - [ ] Job search/filter API
