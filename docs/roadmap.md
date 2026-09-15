@@ -29,7 +29,7 @@
 - [x] Retrieval layer
 - [x] Question classifier
 - [x] LLM provider abstraction
-- [ ] Narrative-answer drafting agent
+- [x] Narrative-answer drafting agent
 - [ ] Evidence verifier
 - [ ] Approval queue
 
