@@ -25,7 +25,7 @@ def build_llm_provider(settings: Settings | None = None) -> LLMProvider:
             model_name=resolved.llm_model,
             api_key=resolved.llm_api_key,
             timeout_seconds=resolved.llm_timeout_seconds,
-            models_path="/v1/models" if not resolved.llm_base_url.rstrip("/").endswith("/v1") else "/models",
+            models_path="/v1/models",
         )
 
     raise ValueError(f"unsupported LLM provider: {resolved.llm_provider}")
