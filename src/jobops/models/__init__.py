@@ -20,6 +20,7 @@ from jobops.models.llm import (
     LLMProviderStatus,
     TokenUsage,
 )
+from jobops.models.narrative_draft import NarrativeDraftRequest, NarrativeDraftResult
 from jobops.models.resume_evidence import (
     EvidenceKind,
     EvidenceMetric,
@@ -58,6 +59,8 @@ __all__ = [
     "HandlingRoute",
     "JobPosting",
     "LLMProviderStatus",
+    "NarrativeDraftRequest",
+    "NarrativeDraftResult",
     "QuestionCategory",
     "QuestionClassification",
     "ResumeEvidenceBase",
