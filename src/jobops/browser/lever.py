@@ -206,8 +206,7 @@ class LeverBrowserAdapter:
         hostname = (parsed.hostname or "").casefold().rstrip(".")
         if hostname in {_LEVER_HOST, _LEVER_API_HOST}:
             return "/apply" in parsed.path
-        normalized = action.casefold()
-        return normalized.endswith("/apply") or "/apply?" in normalized
+        return bool(_LEVER_API_APPLY_PATH.search(parsed.path))
 
     @classmethod
     def _shared_metadata(cls, pages: list[BrowserPageSnapshot]) -> dict[str, object]:
