@@ -11,13 +11,13 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **ML where prediction helps, LLMs where language helps:** ranking and outcome prediction are modeled separately from natural-language generation.
 - **Local-first language inference:** candidate material can be drafted through an on-device Foundry Local model without coupling agents to a specific model runtime.
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
-- **Auditable decisions:** every score and generated answer should be explainable from stored evidence.
+- **Auditable decisions:** every score, generated answer, verification finding, and approval decision should be traceable to stored evidence.
 
-## Current milestone: M2 — Application Intelligence
+## Current milestone: M3 — Browser Automation
 
-M1 Job Intelligence is complete. JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
+M1 Job Intelligence and M2 Application Intelligence are complete.
 
-M2 now has five foundations in place: a provenance-aware master resume evidence model, an explainable resume-family selector, bounded job-specific evidence retrieval, risk-aware application-question routing, and a provider-neutral LLM boundary with Microsoft Foundry Local support. The system can determine which verified evidence may enter a language-model prompt without giving the model authority over candidate facts or review policy.
+JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can also select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions before any future browser automation is allowed to use the prepared content.
 
 ### M1 capabilities implemented
 
@@ -32,27 +32,32 @@ M2 now has five foundations in place: a provenance-aware master resume evidence 
 - idempotent source refresh with stale-posting deactivation;
 - JSON ingestion metrics and scheduler-friendly CLI execution.
 
-### M2 capabilities implemented so far
+### M2 capabilities implemented
 
 - typed career evidence with provenance, verification state, metrics, role-family tags, skills, and retrieval-ready text;
 - resume-family definitions over one master evidence base rather than duplicated factual resumes;
 - verified-payload guardrails that block unknown, excluded, or unverified evidence;
 - explainable resume-family selection with typed feature vectors, confidence/fallback behavior, and verified evidence pools;
-- bounded evidence retrieval using lexical, skill, family, and specificity features;
-- optional semantic retrieval through the same pluggable embedding interface used by M1;
-- evidence-kind diversity and stable ranking;
-- preservation of original evidence IDs and source references through retrieval;
+- bounded evidence retrieval using lexical, skill, family, specificity, and optional semantic features;
 - deterministic application-question classification with Green/Yellow/Red review routing;
 - mandatory human review for legal/sensitive and unresolved application questions;
 - provider-neutral typed LLM requests/responses and an `LLMProvider` protocol;
-- OpenAI-compatible HTTP inference with no mandatory vendor SDK;
-- local-first Microsoft Foundry Local configuration, status/model probing, and optional API-key handling;
-- mocked provider integration tests that keep CI model-download-free;
+- OpenAI-compatible HTTP inference with Microsoft Foundry Local as the default development path;
+- evidence-grounded narrative drafting that must cite supplied evidence IDs;
+- rejection of unverified context, fabricated evidence IDs, malformed drafts, and invalid review routes;
+- layered claim-level verification with deterministic vetoes for unsupported metrics, technologies, credentials, and other concrete evidence mismatches;
+- optional semantic entailment review that may escalate to review but cannot override deterministic blockers;
+- persistent PostgreSQL human approval queue with proposed, edited, and final answer separation;
+- approval states for pending, approved, rejected, and revision-required content;
+- idempotent identical review decisions and rejection of conflicting second decisions;
+- explicit `approved_for_preparation` versus `submitted` separation;
+- approval list/get/decision API endpoints with durable timestamps and audit metadata;
+- mocked/fake model testing so CI remains model-download-free;
 - sanitized public candidate evidence with no production PII.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, and `docs/llm-providers.md` for the candidate-knowledge, policy, retrieval, and inference contracts.
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, and `docs/approval-queue.md` for the M2 contracts.
 
-## Planned releases
+## Releases
 
 ### M1 — Job Intelligence — complete
 
@@ -63,24 +68,26 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-
 - persistent PostgreSQL storage;
 - query/ranking API views.
 
-### M2 — Application Intelligence
+### M2 — Application Intelligence — complete
 
 - candidate knowledge base;
 - resume-family selection;
 - evidence retrieval;
 - question classification and routing;
 - local/cloud-pluggable LLM provider boundary;
-- LLM-generated drafts;
-- answer verification;
-- approval queue.
+- evidence-grounded LLM drafts;
+- claim-level answer verification;
+- persistent human approval queue.
 
-### M3 — Application Automation
+### M3 — Application Automation — next
 
-- Playwright ATS adapters;
-- form-field classification;
-- resume upload;
+- Playwright browser abstraction;
+- generic form-field detection;
+- ATS-specific adapters;
+- resume/document upload;
 - application preparation;
-- mandatory review before submit.
+- screenshot/audit artifacts;
+- separate explicit final submit gate.
 
 ### M4 — Learning System
 
@@ -109,20 +116,25 @@ Application Question -> Risk/Review Classifier --------------+          |
                                                              |   bounded verified context
                                                              |          |
                                                              v          v
-                                                     Application Orchestrator
-                                                      /        |         \
-                                                     v         v          v
-                                               Resume Agent  Q&A Agent  Verifier
-                                                      \        |         /
-                                                       \       v        /
+                                                     Narrative Draft Agent
+                                                             |
                                                         LLMProvider
-                                                   (Foundry Local by default)
+                                                   (Foundry Local default)
                                                              |
                                                              v
-                                                       Approval Queue
+                                                    Claim-Level Verifier
                                                              |
                                                              v
-                                                       Browser Adapter
+                                                Persistent Approval Queue
+                                                             |
+                                                  APPROVED FOR PREPARATION
+                                                             |
+                                                             X  no submit in M2
+                                                             |
+                                                             v
+                                              M3 Browser Preparation Layer
+                                                             |
+                                                   Explicit Submit Gate
                                                              |
                                                              v
                                                   Application Tracking
@@ -204,13 +216,27 @@ A sanitized master-evidence example lives at:
 data/examples/resume-evidence.example.yaml
 ```
 
-Canonical claims and generated resume wording are intentionally different concepts. Generated text may later transform verified evidence, but it may not become a new candidate fact merely because a model wrote it.
+Canonical claims and generated resume wording are intentionally different concepts. Generated text may transform verified evidence, but it may not become a new candidate fact merely because a model wrote it.
+
+## Approval workflow
+
+Prepared answers enter the persistent approval queue before M3 may use them. The API exposes:
+
+```text
+POST /v1/approvals
+GET  /v1/approvals
+GET  /v1/approvals/{approval_id}
+POST /v1/approvals/{approval_id}/decision
+```
+
+An approved item is **approved for preparation only**. The M2 API intentionally has no application-submission endpoint, and approval responses keep `submitted=false`.
 
 ## Example API usage
 
 ```bash
 curl http://127.0.0.1:8000/health
 curl "http://127.0.0.1:8000/v1/jobs?work_mode=remote&min_salary=90000"
+curl "http://127.0.0.1:8000/v1/approvals?status=pending"
 ```
 
 `POST /v1/jobs/rank` accepts a candidate profile plus job filters, evaluates a bounded filtered candidate pool with the transparent baseline scorer, and returns jobs ordered by score.
@@ -219,15 +245,16 @@ curl "http://127.0.0.1:8000/v1/jobs?work_mode=remote&min_salary=90000"
 
 ```text
 src/jobops/
-  agents/         orchestration interfaces and future specialized agents
-  api/            FastAPI health, scoring, job-query, and ranking endpoints
-  db/             persistence models, sessions, and repository interfaces
+  agents/         narrative drafting, verification, orchestration interfaces
+  api/            FastAPI health, jobs, scoring, ranking, and approval endpoints
+  approvals/      human-review state machine
+  db/             PostgreSQL models, sessions, repositories, approval persistence
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
   knowledge/      TruthStore, resume evidence, retrieval, question policy
   llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
-  models/         typed domain/query/evidence/retrieval/LLM models
+  models/         typed domain/query/evidence/retrieval/LLM/approval models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -240,8 +267,8 @@ tests/            unit and integration tests
 
 Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy or trigger final submission on its own.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, and approval cannot trigger final submission on its own.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, provenance-aware RAG, local/private inference, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, browser automation, testing, observability, and analytics all live behind one product boundary.
