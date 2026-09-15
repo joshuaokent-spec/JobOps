@@ -65,8 +65,19 @@ class WorkdayBrowserPrototype:
         if not pages:
             raise WorkdayDetectionError("no browser documents were available for detection")
 
+        root_parsed = urlsplit(pages[0].url)
+        root_hostname = (root_parsed.hostname or "").casefold().rstrip(".")
+        root_workday_context = self._is_workday_host(root_hostname)
+        root_metadata = self._metadata(root_parsed, root_hostname)
+
         detections = [
-            self._detect_document(page, index=index) for index, page in enumerate(pages)
+            self._detect_document(
+                page,
+                index=index,
+                inherited_workday_context=root_workday_context,
+                inherited_metadata=root_metadata,
+            )
+            for index, page in enumerate(pages)
         ]
         detection = max(detections, key=lambda item: item.confidence)
         if not detection.detected:
@@ -98,17 +109,25 @@ class WorkdayBrowserPrototype:
         page: BrowserPageSnapshot,
         *,
         index: int,
+        inherited_workday_context: bool,
+        inherited_metadata: dict[str, str | None],
     ) -> WorkdayDetection:
         parsed = urlsplit(page.url)
         hostname = (parsed.hostname or "").casefold().rstrip(".")
         reasons: list[str] = []
         score = 0.0
 
-        workday_host = self._is_workday_host(hostname)
+        local_workday_host = self._is_workday_host(hostname)
+        workday_context = local_workday_host or (index > 0 and inherited_workday_context)
         candidate_controls = self._has_candidate_application_controls(page)
-        if workday_host:
+
+        if local_workday_host:
             score += 0.65
             reasons.append("Workday external-career host")
+        elif index > 0 and inherited_workday_context:
+            score += 0.65
+            reasons.append("embedded in verified Workday external-career context")
+
         if "/job/" in parsed.path.casefold():
             score += 0.15
             reasons.append("Workday-style job path")
@@ -122,14 +141,21 @@ class WorkdayBrowserPrototype:
             score += 0.10
             reasons.append("candidate-entry controls present")
 
-        metadata = self._metadata(parsed, hostname)
+        local_metadata = self._metadata(parsed, hostname)
+        metadata = (
+            local_metadata
+            if local_workday_host
+            else inherited_metadata
+            if index > 0 and inherited_workday_context
+            else local_metadata
+        )
         if metadata["source"]:
             score += 0.03
             reasons.append("source attribution metadata")
 
         confidence = min(score, 1.0)
         detected = (
-            workday_host
+            workday_context
             and confidence >= self.minimum_confidence
             and self._has_application_context(page)
         )
