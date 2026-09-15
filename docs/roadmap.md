@@ -22,7 +22,7 @@
 - [x] Job search/filter API
 - [x] Scheduled ingestion pipeline
 
-## M2 — Application Intelligence
+## M2 — Application Intelligence — complete
 
 - [x] Resume evidence schema
 - [x] Resume-family selector
@@ -31,7 +31,7 @@
 - [x] LLM provider abstraction
 - [x] Narrative-answer drafting agent
 - [x] Evidence verifier
-- [ ] Approval queue
+- [x] Approval queue
 
 ## M3 — Browser Automation
 
