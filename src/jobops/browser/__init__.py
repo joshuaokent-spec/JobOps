@@ -4,6 +4,7 @@ from jobops.browser.base import (
     BrowserPolicyError,
     SubmissionBlockedError,
 )
+from jobops.browser.field_classifier import SemanticFieldClassifier
 from jobops.browser.planner import BrowserDryRunPlanner
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "BrowserDryRunPlanner",
     "BrowserNavigationBlockedError",
     "BrowserPolicyError",
+    "SemanticFieldClassifier",
     "SubmissionBlockedError",
 ]
