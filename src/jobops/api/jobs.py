@@ -12,9 +12,9 @@ from jobops.models.job import WorkMode
 from jobops.models.query import (
     JobPage,
     JobSearchFilters,
-    RankJobsRequest,
     RankedJob,
     RankedJobPage,
+    RankJobsRequest,
 )
 
 router = APIRouter(prefix="/v1/jobs", tags=["jobs"])
