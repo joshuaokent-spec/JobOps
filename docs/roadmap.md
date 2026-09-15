@@ -9,7 +9,7 @@
 - [x] Orchestration shell
 - [x] FastAPI health/score endpoints
 - [x] CI and tests
-- [ ] PostgreSQL persistence
+- [x] PostgreSQL persistence
 
 ## M1 — Job Intelligence
 
@@ -18,7 +18,7 @@
 - [ ] Canonical normalization pipeline
 - [ ] Deterministic duplicate detection
 - [ ] Embedding-assisted near-duplicate detection
-- [ ] PostgreSQL repositories and migrations
+- [x] PostgreSQL repositories and migrations
 - [ ] Job search/filter API
 - [ ] Scheduled ingestion pipeline
 
