@@ -304,7 +304,13 @@ class SemanticFieldClassifier:
             for rule in ranked[1:]
         )
         if ambiguous:
-            semantics = sorted({rule.semantic.value for rule in ranked if best.confidence - rule.confidence <= 0.03})
+            semantics = sorted(
+                {
+                    rule.semantic.value
+                    for rule in ranked
+                    if best.confidence - rule.confidence <= 0.03
+                }
+            )
             return self._mapping(
                 field,
                 semantic=ApplicationFieldSemantic.UNKNOWN,
