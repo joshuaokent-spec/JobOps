@@ -78,7 +78,10 @@ def normalize_skills(values: list[str]) -> list[str]:
     return result
 
 
-def canonical_work_mode(workplace_type: str | None, location: str | None) -> WorkMode:
+def canonical_work_mode(
+    workplace_type: str | None,
+    location: str | None,
+) -> WorkMode:
     explicit = text_key(workplace_type)
     if explicit in {"remote", "fully remote"}:
         return WorkMode.REMOTE
@@ -107,7 +110,9 @@ def dedupe_fingerprint(
     work_mode: WorkMode,
 ) -> str:
     location_key = "remote" if work_mode is WorkMode.REMOTE else text_key(location)
-    material = "\0".join((text_key(company), text_key(title), location_key)).encode()
+    material = "\0".join(
+        (text_key(company), text_key(title), location_key)
+    ).encode()
     return hashlib.sha256(material).hexdigest()[:32]
 
 
@@ -127,7 +132,12 @@ def _normalize_compensation(
     if multiplier is None:
         normalized_min = None if minimum is None else round(minimum)
         normalized_max = None if maximum is None else round(maximum)
-        return normalized_min, normalized_max, normalized_currency, clean_display_text(interval)
+        return (
+            normalized_min,
+            normalized_max,
+            normalized_currency,
+            clean_display_text(interval),
+        )
 
     normalized_min = None if minimum is None else round(minimum * multiplier)
     normalized_max = None if maximum is None else round(maximum * multiplier)
@@ -143,6 +153,7 @@ class JobNormalizer:
 
     def normalize(self, source_job: SourceJobPosting) -> JobPosting:
         source = clean_display_text(source_job.source) or source_job.source
+        source_scope = clean_display_text(source_job.source_scope)
         source_job_id = source_job.source_job_id.strip()
         company = clean_display_text(source_job.company) or source_job.company
         company = self.company_aliases.get(text_key(company), company)
@@ -171,6 +182,7 @@ class JobNormalizer:
             required_skills=normalize_skills(source_job.required_skills),
             preferred_skills=normalize_skills(source_job.preferred_skills),
             source=source.casefold(),
+            source_scope=source_scope,
             source_job_id=source_job_id,
             source_url=clean_display_text(source_job.source_url),
             apply_url=clean_display_text(source_job.apply_url),

@@ -28,6 +28,7 @@ class JobPosting(BaseModel):
     preferred_skills: list[str] = Field(default_factory=list)
     minimum_years_experience: float | None = Field(default=None, ge=0)
     source: str | None = None
+    source_scope: str | None = None
     source_job_id: str | None = None
     source_url: str | None = None
     apply_url: str | None = None

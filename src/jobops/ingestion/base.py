@@ -10,4 +10,11 @@ class IngestionError(RuntimeError):
 
 
 class JobSourceAdapter(Protocol):
-    async def fetch(self, client: httpx.AsyncClient | None = None) -> list[SourceJobPosting]: ...
+    source_name: str
+    source_scope: str
+    company: str
+
+    async def fetch(
+        self,
+        client: httpx.AsyncClient | None = None,
+    ) -> list[SourceJobPosting]: ...

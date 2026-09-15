@@ -24,17 +24,21 @@ class JobRecord(Base):
     preferred_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
     minimum_years_experience: Mapped[float | None] = mapped_column(Float, nullable=True)
     source: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    source_scope: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     source_job_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     apply_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
+        DateTime(timezone=True),
+        nullable=True,
     )
     dedupe_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     source_metadata: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

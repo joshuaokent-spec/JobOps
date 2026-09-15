@@ -8,6 +8,7 @@ class SourceJobPosting(BaseModel):
     """Source-agnostic contract emitted by ATS adapters before normalization."""
 
     source: str = Field(min_length=1)
+    source_scope: str | None = None
     source_job_id: str = Field(min_length=1)
     company: str = Field(min_length=1)
     title: str = Field(min_length=1)
