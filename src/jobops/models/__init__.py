@@ -43,6 +43,9 @@ from jobops.models.form_mapping import (
     MappingSource,
     SemanticFieldMapping,
     SemanticPageMapping,
+    SemanticPreparationAction,
+    SemanticPreparationOperation,
+    SemanticPreparationPlan,
 )
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.llm import (
@@ -129,6 +132,9 @@ __all__ = [
     "ScoreRequest",
     "SemanticFieldMapping",
     "SemanticPageMapping",
+    "SemanticPreparationAction",
+    "SemanticPreparationOperation",
+    "SemanticPreparationPlan",
     "TokenUsage",
     "VerificationFinding",
     "VerificationSeverity",
