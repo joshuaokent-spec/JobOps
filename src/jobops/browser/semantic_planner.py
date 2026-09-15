@@ -1,6 +1,7 @@
 from jobops.models.application_question import HandlingRoute
 from jobops.models.form_mapping import (
     ApplicationFieldSemantic,
+    SemanticFieldMapping,
     SemanticPageMapping,
     SemanticPreparationAction,
     SemanticPreparationOperation,
@@ -40,7 +41,7 @@ class SemanticPreparationPlanner:
         )
 
     @staticmethod
-    def _action(mapping) -> SemanticPreparationAction:
+    def _action(mapping: SemanticFieldMapping) -> SemanticPreparationAction:
         if mapping.semantic is ApplicationFieldSemantic.SUBMIT_CONTROL:
             return SemanticPreparationAction(
                 mapping=mapping,
