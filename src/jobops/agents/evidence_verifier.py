@@ -15,7 +15,7 @@ from jobops.models.llm import ChatMessage, ChatRequest, ChatRole
 from jobops.models.resume_evidence import ResumeEvidenceItem
 
 _NUMBER_RE: Final = re.compile(
-    r"(?<![\w.])[-+]?\d[\d,]*(?:\.\d+)?%?(?![\w.])",
+    r"(?<![\w.])[-+]?\d[\d,]*(?:\.\d+)?%?(?!\w)",
     re.IGNORECASE,
 )
 _CURRENCY_RE: Final = re.compile(
@@ -118,7 +118,11 @@ class EvidenceVerifier:
                 )
             )
 
-        cited_items = [evidence_by_id[item_id] for item_id in cited_ids if item_id in evidence_by_id]
+        cited_items = [
+            evidence_by_id[item_id]
+            for item_id in cited_ids
+            if item_id in evidence_by_id
+        ]
         unverified_ids = sorted(item.evidence_id for item in cited_items if not item.verified)
         if unverified_ids:
             findings.append(
@@ -131,12 +135,21 @@ class EvidenceVerifier:
 
         if cited_items:
             support_text = "\n".join(self._support_text(item) for item in cited_items)
-            findings.extend(self._deterministic_claim_findings(draft.draft, support_text, cited_ids))
+            findings.extend(
+                self._deterministic_claim_findings(
+                    draft.draft,
+                    support_text,
+                    cited_ids,
+                )
+            )
         else:
             findings.append(
                 self._block(
                     "missing_cited_evidence",
-                    "No cited evidence from the retrieval context is available to verify the draft.",
+                    (
+                        "No cited evidence from the retrieval context is available "
+                        "to verify the draft."
+                    ),
                     cited_ids,
                 )
             )
@@ -173,7 +186,10 @@ class EvidenceVerifier:
             findings.append(
                 self._block(
                     "unsupported_numeric_claim",
-                    f"Draft contains numeric claims absent from cited evidence: {unsupported_numbers}.",
+                    (
+                        "Draft contains numeric claims absent from cited evidence: "
+                        f"{unsupported_numbers}."
+                    ),
                     evidence_ids,
                 )
             )
