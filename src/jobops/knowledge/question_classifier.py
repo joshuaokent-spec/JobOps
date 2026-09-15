@@ -25,20 +25,63 @@ def _rule(pattern: str, label: str, fact_key: str | None = None) -> _Rule:
 
 
 _LEGAL_RULES: Final[tuple[_Rule, ...]] = (
-    _rule(r"authori[sz](?:ed|ation).*work|legally.*work", "work authorization", "work_authorization"),
-    _rule(r"sponsor(?:ship)?|visa sponsorship|immigration status", "employment sponsorship", "requires_sponsorship"),
-    _rule(r"security clearance|clearance level", "security clearance", "security_clearance"),
-    _rule(r"criminal|convict(?:ed|ion)|felony|misdemeanor", "criminal-history attestation", "criminal_history"),
-    _rule(r"previously employed|worked (?:for|at) (?:this|our) company", "prior-employment attestation", "prior_company_employment"),
-    _rule(r"race|ethnicity|gender|sex|sexual orientation|disab(?:ility|led)|veteran status", "protected or sensitive self-identification"),
+    _rule(
+        r"authori[sz](?:ed|ation).*work|legally.*work",
+        "work authorization",
+        "work_authorization",
+    ),
+    _rule(
+        r"sponsor(?:ship)?|visa sponsorship|immigration status",
+        "employment sponsorship",
+        "requires_sponsorship",
+    ),
+    _rule(
+        r"security clearance|clearance level",
+        "security clearance",
+        "security_clearance",
+    ),
+    _rule(
+        r"criminal|convict(?:ed|ion)|felony|misdemeanor",
+        "criminal-history attestation",
+        "criminal_history",
+    ),
+    _rule(
+        r"previously employed|worked (?:for|at) (?:this|our) company",
+        "prior-employment attestation",
+        "prior_company_employment",
+    ),
+    _rule(
+        r"race|ethnicity|gender|sex|sexual orientation|disab(?:ility|led)|veteran status",
+        "protected or sensitive self-identification",
+    ),
 )
 
 _PREFERENCE_RULES: Final[tuple[_Rule, ...]] = (
-    _rule(r"relocat(?:e|ion)|willing to move", "relocation preference", "willing_to_relocate"),
-    _rule(r"salary|compensation|pay range|desired pay|expected pay", "compensation preference", "salary_expectation"),
-    _rule(r"remote|hybrid|on[- ]?site|work location preference", "work-mode preference", "preferred_work_mode"),
-    _rule(r"willing to travel|travel percentage|how much travel", "travel preference", "travel_willingness"),
-    _rule(r"start date|available to start|notice period", "start-date preference", "availability"),
+    _rule(
+        r"relocat(?:e|ion)|willing to move",
+        "relocation preference",
+        "willing_to_relocate",
+    ),
+    _rule(
+        r"salary|compensation|pay range|desired pay|expected pay",
+        "compensation preference",
+        "salary_expectation",
+    ),
+    _rule(
+        r"remote|hybrid|on[- ]?site|work location preference",
+        "work-mode preference",
+        "preferred_work_mode",
+    ),
+    _rule(
+        r"willing to travel|travel percentage|how much travel",
+        "travel preference",
+        "travel_willingness",
+    ),
+    _rule(
+        r"start date|available to start|notice period",
+        "start-date preference",
+        "availability",
+    ),
 )
 
 _NARRATIVE_RULES: Final[tuple[_Rule, ...]] = (
@@ -46,20 +89,33 @@ _NARRATIVE_RULES: Final[tuple[_Rule, ...]] = (
     _rule(r"\bdescribe\b", "open-ended description prompt"),
     _rule(r"\bgive (?:us |me )?(?:an? )?example\b", "behavioral example prompt"),
     _rule(r"\bshare (?:an? )?example\b", "behavioral example prompt"),
-    _rule(r"\bwhy (?:do|are|would|should|did)\b|\bwhy this\b|\bwhy our\b", "motivation/reasoning prompt"),
+    _rule(
+        r"\bwhy (?:do|are|would|should|did)\b|\bwhy this\b|\bwhy our\b",
+        "motivation/reasoning prompt",
+    ),
     _rule(r"\bwhat interests you\b|\bwhat excites you\b", "motivation prompt"),
     _rule(r"\bwalk (?:us|me) through\b", "open-ended process prompt"),
     _rule(r"\bhow did you\b|\bhow have you\b", "experience narrative prompt"),
 )
 
 _NUMERICAL_RULES: Final[tuple[_Rule, ...]] = (
-    _rule(r"how many years|number of years|years of experience", "experience-duration calculation"),
-    _rule(r"how many (?:projects|people|reports|records|customers|users)", "numeric experience calculation"),
+    _rule(
+        r"how many years|number of years|years of experience",
+        "experience-duration calculation",
+    ),
+    _rule(
+        r"how many (?:projects|people|reports|records|customers|users)",
+        "numeric experience calculation",
+    ),
 )
 
 _FACTUAL_RULES: Final[tuple[_Rule, ...]] = (
     _rule(r"certif(?:ication|ied)|license[ds]?", "certification fact", "certifications"),
-    _rule(r"highest (?:degree|education)|education level|degree (?:do you|have you)", "education fact", "highest_education"),
+    _rule(
+        r"highest (?:degree|education)|education level|degree (?:do you|have you)",
+        "education fact",
+        "highest_education",
+    ),
     _rule(r"portfolio|github|website url|linkedin", "candidate-link fact", "portfolio_links"),
 )
 
@@ -138,7 +194,10 @@ class RuleBasedQuestionClassifier:
                 requires_review=False,
                 rule=numerical,
                 resolution=None,
-                reason="The question should be answered by deterministic calculation, not generation.",
+                reason=(
+                    "The question should be answered by deterministic calculation, "
+                    "not generation."
+                ),
             )
 
         factual = self._first_match(text, _FACTUAL_RULES)
@@ -174,7 +233,10 @@ class RuleBasedQuestionClassifier:
                 requires_review=True,
                 rule=rule,
                 resolution=resolution,
-                reason="The question maps to a fact key, but no verified answer is safely available.",
+                reason=(
+                    "The question maps to a fact key, but no verified answer "
+                    "is safely available."
+                ),
             )
 
         if resolution.requires_human_review:
