@@ -22,6 +22,7 @@ dependencies = [
 
 [project.scripts]
 jobops-ingest = "jobops.ingestion.cli:main"
+jobops-semantic-dedup = "jobops.normalization.semantic_cli:main"
 
 [project.optional-dependencies]
 dev = [
