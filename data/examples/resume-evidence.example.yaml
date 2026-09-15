@@ -1,0 +1,93 @@
+candidate_id: sample-candidate
+
+sources:
+  - source_id: source-data-lake-repo
+    kind: project_artifact
+    label: Local data lake ETL prototype repository
+    locator: github:sample/local-data-lake-etl
+  - source_id: source-project-overview
+    kind: document
+    label: Sanitized project experience overview
+    locator: library:sample-project-overview
+  - source_id: source-degree-record
+    kind: education_record
+    label: Example State University degree record
+
+items:
+  - evidence_id: project-data-lake-etl
+    kind: project
+    claim: Built a local data-lake ETL prototype that ingests, transforms, validates, and organizes structured datasets for downstream analytics.
+    title: Local Data Lake ETL Prototype
+    skills: [Python, SQL, ETL, Data Pipelines, Data Quality]
+    role_families: [data_engineering, data_science, analytics]
+    tags: [portfolio, pipeline, ingestion]
+    metrics:
+      - name: pipeline_stages
+        value: 4
+        unit: stages
+        context: ingest, transform, validate, publish
+    source_refs: [source-data-lake-repo, source-project-overview]
+    verified: true
+
+  - evidence_id: project-ml-ranking
+    kind: project
+    claim: Implemented an explainable ranking prototype that separates deterministic features from semantic similarity for auditable recommendations.
+    title: Ranking Prototype
+    skills: [Python, Machine Learning, Feature Engineering, Evaluation]
+    role_families: [data_science, ai_ml]
+    tags: [portfolio, ranking, evaluation]
+    source_refs: [source-project-overview]
+    verified: true
+
+  - evidence_id: education-bachelors
+    kind: education
+    claim: Earned a bachelor's degree from Example State University.
+    organization: Example State University
+    title: Bachelor of Science
+    role_families: [general]
+    tags: [education]
+    source_refs: [source-degree-record]
+    verified: true
+
+  - evidence_id: skill-python
+    kind: skill
+    claim: Uses Python for data processing, APIs, automation, and machine-learning workflows.
+    skills: [Python]
+    role_families: [data_engineering, data_science, ai_ml, analytics, software]
+    tags: [programming]
+    source_refs: [source-data-lake-repo, source-project-overview]
+    verified: true
+
+  - evidence_id: draft-cloud-claim
+    kind: skill
+    claim: Has production-scale cloud infrastructure ownership experience.
+    skills: [Cloud Infrastructure]
+    role_families: [data_engineering, software]
+    tags: [draft, needs-verification]
+    verified: false
+
+families:
+  - family_id: data-engineer
+    name: Data Engineering
+    role_families: [data_engineering]
+    priority_skills: [Python, SQL, ETL, Data Pipelines]
+    pinned_evidence_ids: [project-data-lake-etl]
+    excluded_evidence_ids: [draft-cloud-claim]
+
+  - family_id: data-scientist
+    name: Data Science
+    role_families: [data_science]
+    priority_skills: [Python, Machine Learning, Feature Engineering, Evaluation]
+    pinned_evidence_ids: [project-ml-ranking]
+
+  - family_id: ai-engineer
+    name: AI / ML Engineering
+    role_families: [ai_ml]
+    priority_skills: [Python, Machine Learning, Evaluation]
+    pinned_evidence_ids: [project-ml-ranking, skill-python]
+
+  - family_id: analytics
+    name: Analytics
+    role_families: [analytics]
+    priority_skills: [Python, SQL, Data Quality]
+    pinned_evidence_ids: [project-data-lake-etl]
