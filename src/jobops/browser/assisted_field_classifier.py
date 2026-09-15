@@ -4,7 +4,7 @@ from typing import Any, Final
 
 from jobops.browser.field_classifier import SemanticFieldClassifier
 from jobops.llm import LLMProvider, LLMProviderError
-from jobops.models.application_question import HandlingRoute, QuestionCategory, ReviewBand
+from jobops.models.application_question import HandlingRoute, ReviewBand
 from jobops.models.browser import BrowserFieldDescriptor
 from jobops.models.form_mapping import (
     ApplicationFieldSemantic,
