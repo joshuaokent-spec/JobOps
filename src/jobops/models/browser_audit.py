@@ -3,7 +3,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from jobops.models.browser import BrowserEngine
+from jobops.models.browser import BrowserEngine, BrowserPageSnapshot
 
 
 class BrowserAuditVendor(StrEnum):
@@ -18,7 +18,6 @@ class BrowserAuditArtifactKind(StrEnum):
     BROWSER_SNAPSHOT = "browser_snapshot"
     SEMANTIC_PLAN = "semantic_plan"
     ATS_CONTEXT = "ats_context"
-    MANIFEST = "manifest"
 
 
 class BrowserAuditArtifact(BaseModel):
@@ -44,6 +43,6 @@ class BrowserAuditManifest(BaseModel):
 
 
 class BrowserInspectionCapture(BaseModel):
-    documents: list[object] = Field(default_factory=list)
+    documents: list[BrowserPageSnapshot] = Field(default_factory=list)
     screenshot_png: bytes
     redacted_dom_values: int = Field(default=0, ge=0)
