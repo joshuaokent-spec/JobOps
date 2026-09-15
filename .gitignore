@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Secrets / runtime config
+.env
+.env.*
+!.env.example
+secrets/
+credentials.json
+token.json
+
+# Private candidate/application data
+data/private/
+data/production/
+candidate.yaml
+resumes/private/
+cover_letters/private/
+
+# Browser state
+playwright/.auth/
+*.cookies.json
+
+# Local databases / model artifacts
+*.sqlite
+*.sqlite3
+*.db
+models/checkpoints/
+artifacts/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
