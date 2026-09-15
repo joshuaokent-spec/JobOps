@@ -2,13 +2,14 @@
 
 **JobOps** is an evidence-grounded, human-in-the-loop job-search intelligence platform for discovering, ranking, preparing, and tracking job applications.
 
-The project is intentionally designed as a portfolio-grade system spanning data engineering, data science, machine learning, agent orchestration, retrieval, API design, browser automation, and analytics.
+The project is intentionally designed as a portfolio-grade system spanning data engineering, data science, machine learning, agent orchestration, retrieval, local AI inference, API design, browser automation, and analytics.
 
 ## Core principles
 
 - **Truth before fluency:** generated answers must be grounded in verified candidate facts.
 - **Human approval before submission:** the system may prepare applications, but consequential submission stays behind an approval gate.
 - **ML where prediction helps, LLMs where language helps:** ranking and outcome prediction are modeled separately from natural-language generation.
+- **Local-first language inference:** candidate material can be drafted through an on-device Foundry Local model without coupling agents to a specific model runtime.
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
 - **Auditable decisions:** every score and generated answer should be explainable from stored evidence.
 
@@ -16,7 +17,7 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 
 M1 Job Intelligence is complete. JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with the explainable baseline scorer.
 
-M2 now has three foundations in place: a provenance-aware master resume evidence model, an explainable resume-family selector, and a bounded evidence-retrieval layer for job-grounded drafting. The system can choose the most appropriate resume family and retrieve a small verified evidence context without inventing qualifications.
+M2 now has five foundations in place: a provenance-aware master resume evidence model, an explainable resume-family selector, bounded job-specific evidence retrieval, risk-aware application-question routing, and a provider-neutral LLM boundary with Microsoft Foundry Local support. The system can determine which verified evidence may enter a language-model prompt without giving the model authority over candidate facts or review policy.
 
 ### M1 capabilities implemented
 
@@ -41,9 +42,15 @@ M2 now has three foundations in place: a provenance-aware master resume evidence
 - optional semantic retrieval through the same pluggable embedding interface used by M1;
 - evidence-kind diversity and stable ranking;
 - preservation of original evidence IDs and source references through retrieval;
+- deterministic application-question classification with Green/Yellow/Red review routing;
+- mandatory human review for legal/sensitive and unresolved application questions;
+- provider-neutral typed LLM requests/responses and an `LLMProvider` protocol;
+- OpenAI-compatible HTTP inference with no mandatory vendor SDK;
+- local-first Microsoft Foundry Local configuration, status/model probing, and optional API-key handling;
+- mocked provider integration tests that keep CI model-download-free;
 - sanitized public candidate evidence with no production PII.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, and `docs/evidence-retrieval.md` for the candidate-knowledge and retrieval contracts.
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, and `docs/llm-providers.md` for the candidate-knowledge, policy, retrieval, and inference contracts.
 
 ## Planned releases
 
@@ -62,6 +69,7 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, and `docs/evide
 - resume-family selection;
 - evidence retrieval;
 - question classification and routing;
+- local/cloud-pluggable LLM provider boundary;
 - LLM-generated drafts;
 - answer verification;
 - approval queue.
@@ -96,6 +104,7 @@ Candidate Profile -> TruthStore ---------------------------+
                                                              |
 Resume Evidence -> ResumeEvidenceStore -> Family Selector --+--> Evidence Retrieval
                                                              |          |
+Application Question -> Risk/Review Classifier --------------+          |
                                                              |          v
                                                              |   bounded verified context
                                                              |          |
@@ -105,17 +114,21 @@ Resume Evidence -> ResumeEvidenceStore -> Family Selector --+--> Evidence Retrie
                                                      v         v          v
                                                Resume Agent  Q&A Agent  Verifier
                                                       \        |         /
-                                                       v       v        v
-                                                         Approval Queue
-                                                                |
-                                                                v
-                                                         Browser Adapter
-                                                                |
-                                                                v
-                                                      Application Tracking
-                                                                |
-                                                                v
-                                                     Analytics / ML Feedback
+                                                       \       v        /
+                                                        LLMProvider
+                                                   (Foundry Local by default)
+                                                             |
+                                                             v
+                                                       Approval Queue
+                                                             |
+                                                             v
+                                                       Browser Adapter
+                                                             |
+                                                             v
+                                                  Application Tracking
+                                                             |
+                                                             v
+                                                  Analytics / ML Feedback
 ```
 
 ## Quick start
@@ -136,6 +149,29 @@ Initialize or upgrade PostgreSQL with:
 docker compose up -d postgres
 alembic upgrade head
 ```
+
+## Local LLM inference
+
+JobOps defaults to a Foundry Local-compatible endpoint in `.env.example`:
+
+```env
+JOBOPS_LLM_PROVIDER=foundry_local
+JOBOPS_LLM_BASE_URL=http://127.0.0.1:39839/v1
+JOBOPS_LLM_MODEL=qwen2.5-0.5b
+JOBOPS_LLM_API_KEY=
+```
+
+For a predictable local endpoint during development:
+
+```powershell
+foundry server start --port 39839 --idle-timeout 0
+foundry model load qwen2.5-0.5b
+foundry server status
+```
+
+Use the model alias at the Foundry CLI layer to select the best local hardware variant. If the REST service requires the concrete loaded model ID, set `JOBOPS_LLM_MODEL` to that value in your private `.env`.
+
+See `docs/llm-providers.md` for provider configuration and the local-inference safety boundary.
 
 ## Job ingestion
 
@@ -188,9 +224,10 @@ src/jobops/
   db/             persistence models, sessions, and repository interfaces
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
-  knowledge/      TruthStore, resume evidence, and evidence retrieval
+  knowledge/      TruthStore, resume evidence, retrieval, question policy
+  llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
-  models/         typed domain/query/evidence/retrieval models
+  models/         typed domain/query/evidence/retrieval/LLM models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -203,8 +240,8 @@ tests/            unit and integration tests
 
 Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy or trigger final submission on its own.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, provenance-aware RAG, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, learned models, provenance-aware RAG, local/private inference, agent tooling, browser automation, testing, observability, and analytics all live behind one product boundary.
