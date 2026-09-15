@@ -17,7 +17,7 @@
 - [x] Lever ingestion adapter
 - [x] Canonical normalization pipeline
 - [x] Deterministic duplicate detection
-- [ ] Embedding-assisted near-duplicate detection
+- [x] Embedding-assisted near-duplicate detection
 - [x] PostgreSQL repositories and migrations
 - [x] Job search/filter API
 - [x] Scheduled ingestion pipeline
