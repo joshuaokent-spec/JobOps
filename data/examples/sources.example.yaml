@@ -1,0 +1,7 @@
+sources:
+  - kind: greenhouse
+    board_token: example-board-token
+    company: Example Company
+  - kind: lever
+    site: example-lever-site
+    company: Example Company
