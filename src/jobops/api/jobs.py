@@ -1,12 +1,10 @@
-from collections.abc import Iterator
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
-from jobops.config import get_settings
-from jobops.db import SqlAlchemyJobRepository, build_engine, build_session_factory
+from jobops.api.dependencies import get_session
+from jobops.db import SqlAlchemyJobRepository
 from jobops.matching import BaselineJobScorer
 from jobops.models.job import WorkMode
 from jobops.models.query import (
@@ -18,20 +16,6 @@ from jobops.models.query import (
 )
 
 router = APIRouter(prefix="/v1/jobs", tags=["jobs"])
-
-
-@lru_cache
-def get_session_factory() -> sessionmaker[Session]:
-    engine = build_engine(get_settings().database_url)
-    return build_session_factory(engine)
-
-
-def get_session() -> Iterator[Session]:
-    session = get_session_factory()()
-    try:
-        yield session
-    finally:
-        session.close()
 
 
 @router.get("", response_model=JobPage)
