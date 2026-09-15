@@ -1,0 +1,13 @@
+[
+  {"question": "Are you legally authorized to work in the United States?", "category": "legal_sensitive", "route": "human_review"},
+  {"question": "Will you now or in the future require visa sponsorship?", "category": "legal_sensitive", "route": "human_review"},
+  {"question": "What level of security clearance do you currently hold?", "category": "legal_sensitive", "route": "human_review"},
+  {"question": "Please indicate your veteran status.", "category": "legal_sensitive", "route": "human_review"},
+  {"question": "Are you willing to relocate for this role?", "category": "preference", "route": "draft_with_review"},
+  {"question": "What is your desired salary range?", "category": "preference", "route": "draft_with_review"},
+  {"question": "Describe a data pipeline you built and the impact it had.", "category": "narrative", "route": "draft_with_review"},
+  {"question": "Why do you want to work for our company?", "category": "narrative", "route": "draft_with_review"},
+  {"question": "How many years of experience do you have with Python?", "category": "numerical", "route": "calculate"},
+  {"question": "What certifications do you currently hold?", "category": "factual", "route": "auto_fill"},
+  {"question": "What is your favorite color?", "category": "unknown", "route": "escalate"}
+]

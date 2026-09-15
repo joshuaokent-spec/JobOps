@@ -1,3 +1,10 @@
+from jobops.models.application_question import (
+    HandlingRoute,
+    QuestionCategory,
+    QuestionClassification,
+    ReviewBand,
+    ReviewPriority,
+)
 from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
 from jobops.models.evidence_retrieval import (
     EvidenceRetrievalFeatures,
@@ -36,13 +43,18 @@ __all__ = [
     "EvidenceSource",
     "EvidenceSourceKind",
     "FactRisk",
+    "HandlingRoute",
     "JobPosting",
+    "QuestionCategory",
+    "QuestionClassification",
     "ResumeEvidenceBase",
     "ResumeEvidenceItem",
     "ResumeFamilyDefinition",
     "ResumeFamilyFeatures",
     "ResumeFamilyScore",
     "ResumeFamilySelection",
+    "ReviewBand",
+    "ReviewPriority",
     "RoleFamily",
     "ScoreBreakdown",
     "ScoreRequest",
