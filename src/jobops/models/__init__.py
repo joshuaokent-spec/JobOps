@@ -38,6 +38,15 @@ from jobops.models.evidence_retrieval import (
     EvidenceRetrievalHit,
     EvidenceRetrievalResult,
 )
+from jobops.models.form_mapping import (
+    ApplicationFieldSemantic,
+    MappingSource,
+    SemanticFieldMapping,
+    SemanticPageMapping,
+    SemanticPreparationAction,
+    SemanticPreparationOperation,
+    SemanticPreparationPlan,
+)
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.llm import (
     ChatMessage,
@@ -68,6 +77,7 @@ from jobops.models.resume_selection import (
 from jobops.models.scoring import ScoreBreakdown, ScoreRequest
 
 __all__ = [
+    "ApplicationFieldSemantic",
     "ApprovalCreate",
     "ApprovalDecision",
     "ApprovalItem",
@@ -104,6 +114,7 @@ __all__ = [
     "HandlingRoute",
     "JobPosting",
     "LLMProviderStatus",
+    "MappingSource",
     "NarrativeDraftRequest",
     "NarrativeDraftResult",
     "QuestionCategory",
@@ -119,6 +130,11 @@ __all__ = [
     "RoleFamily",
     "ScoreBreakdown",
     "ScoreRequest",
+    "SemanticFieldMapping",
+    "SemanticPageMapping",
+    "SemanticPreparationAction",
+    "SemanticPreparationOperation",
+    "SemanticPreparationPlan",
     "TokenUsage",
     "VerificationFinding",
     "VerificationSeverity",

@@ -9,18 +9,18 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **Truth before fluency:** generated answers must be grounded in verified candidate facts.
 - **Human approval before submission:** the system may prepare applications, but consequential submission stays behind an approval gate.
 - **ML where prediction helps, LLMs where language helps:** ranking and outcome prediction are modeled separately from natural-language generation.
-- **Local-first language inference:** candidate material can be drafted through an on-device Foundry Local model without coupling agents to a specific model runtime.
+- **Local-first language inference:** candidate material and ambiguous UI classification can use an on-device Foundry Local model without coupling agents to a specific runtime.
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
-- **Auditable decisions:** every score, generated answer, verification finding, approval decision, and browser-preparation step should be traceable.
+- **Auditable decisions:** every score, generated answer, verification finding, approval decision, browser mapping, and preparation step should be traceable.
 - **Browser safety by construction:** browser inspection and preparation are separate from consequential submission.
 
 ## Current milestone: M3 — Browser Automation
 
-M1 Job Intelligence and M2 Application Intelligence are complete. M3 has begun with a guarded Playwright browser abstraction and real-Chromium CI coverage.
+M1 Job Intelligence and M2 Application Intelligence are complete. M3 now has both a guarded Playwright browser abstraction and semantic form-field understanding, with real-Chromium CI coverage across the browser-to-policy boundary.
 
 JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
 
-The first M3 slice can now open employer/ATS pages in isolated Playwright contexts, inventory native form controls, and produce a typed dry-run preparation plan. Submit-capable controls remain inventory-only, mutating network requests are blocked in dry-run mode, and M3.1 contains no executable submission path.
+M3.1 can open employer/ATS pages in isolated Playwright contexts, inventory native form controls, and produce a typed dry-run structural plan. M3.2 maps those controls into application semantics such as contact data, resume/CV, professional links, salary, sponsorship, work authorization, narrative prompts, and EEO/self-identification fields. Those mappings reuse the existing Green/Yellow/Red M2 policy and produce a second non-executing semantic preparation plan. Submit-capable controls remain blocked and no live form fill or application submission path exists yet.
 
 ### M1 capabilities implemented
 
@@ -61,19 +61,25 @@ The first M3 slice can now open employer/ATS pages in isolated Playwright contex
 ### M3 capabilities implemented so far
 
 - optional Playwright browser dependency rather than a mandatory base-runtime dependency;
-- typed browser session, page, form, field, option, and dry-run-plan contracts;
+- typed browser session, page, form, field, option, structural-plan, semantic-mapping, and semantic-plan contracts;
 - isolated non-persistent browser contexts with service workers blocked by default;
 - native form inventory for input, textarea, select, checkbox, radio, button, and file controls;
 - label, accessible-name, required/disabled state, option, and stable-selector extraction;
-- deterministic dry-run planning for fill/select/choose/upload/review/skip operations;
+- deterministic structural dry-run planning for fill/select/choose/upload/review/skip operations;
 - submit-capable controls explicitly represented as `blocked_submit` rather than executable actions;
 - dry-run blocking of `POST`, `PUT`, `PATCH`, and `DELETE` browser requests;
 - post-load document-navigation blocking while the submission gate is closed;
 - DOM guards for submit events, `form.submit()`, and `form.requestSubmit()`;
-- LinkedIn browser navigation kept outside the ATS automation layer;
-- real headless Chromium tests against a controlled application-form fixture in GitHub Actions.
+- deterministic semantic mapping for identity/contact fields, professional links, documents, preferences, legal/consequential fields, narrative prompts, demographics, unknowns, and submit controls;
+- explicit confidence, matched signals, and ambiguity handling rather than silent guesses;
+- direct reuse of M2 `QuestionCategory`, `HandlingRoute`, and Green/Yellow/Red review policy inside browser automation;
+- optional provider-neutral model-assisted classification only for unresolved controls;
+- model-assisted mappings prevented from becoming Green autofill; ordinary assisted mappings stay Yellow and sensitive ones stay Red;
+- semantic preparation planning that routes fields to verified fact resolution, draft-with-review, human review, escalation, or blocked submit without writing to the browser;
+- LinkedIn browser navigation kept outside the ATS automation layer while LinkedIn profile URL remains a valid candidate data field;
+- real headless Chromium tests against controlled application forms in GitHub Actions, including browser-snapshot-to-semantic-policy integration.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, and `docs/browser-dry-run.md` for the current system contracts.
+See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, `docs/browser-dry-run.md`, and `docs/semantic-form-mapping.md` for the current system contracts.
 
 ## Releases
 
@@ -100,8 +106,8 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-
 ### M3 — Application Automation — in progress
 
 - guarded Playwright abstraction — complete;
-- semantic generic form-field detection — next;
-- ATS-specific adapters;
+- semantic generic form-field detection and M2 policy mapping — complete;
+- ATS-specific adapters — next;
 - resume/document upload;
 - application preparation;
 - screenshot/audit artifacts;
@@ -152,12 +158,21 @@ Application Question -> Risk/Review Classifier --------------+          |
                                                              |
                                                 Structural Form Snapshot
                                                              |
-                                                  Dry-Run Action Plan
-                                                             |
-                                                             X  no submit in M3.1
+                                                             v
+                                               Semantic Field Mapping
+                                              /          |           \
+                                    deterministic   model fallback   ambiguity
+                                              \          |           /
+                                                             v
+                                                  M2 Review Policy
                                                              |
                                                              v
-                                           Semantic Field Mapping / ATS Adapters
+                                            Semantic Preparation Plan
+                                                             |
+                                                             X  no live fill/submit in M3.2
+                                                             |
+                                                             v
+                                                   ATS-Specific Adapters
                                                              |
                                                    Explicit Submit Gate
                                                              |
@@ -219,7 +234,7 @@ pip install -e ".[dev,browser]"
 python -m playwright install chromium
 ```
 
-M3.1 exposes structural inspection and a non-executing preparation plan. It does not fill or submit a live application. See `docs/browser-dry-run.md` for the browser-policy contract.
+M3.1 exposes guarded structural inspection. M3.2 adds deterministic-first semantic field understanding plus an optional local-model fallback for unresolved controls. Both stages produce non-executing plans: they do not fill or submit live applications. See `docs/browser-dry-run.md` and `docs/semantic-form-mapping.md` for the browser-policy contracts.
 
 ## Job ingestion
 
@@ -265,7 +280,7 @@ GET  /v1/approvals/{approval_id}
 POST /v1/approvals/{approval_id}/decision
 ```
 
-An approved item is **approved for preparation only**. The M2 API intentionally has no application-submission endpoint, and approval responses keep `submitted=false`.
+An approved item is **approved for preparation only**. The approval API intentionally has no application-submission endpoint, and approval responses keep `submitted=false`.
 
 ## Example API usage
 
@@ -284,14 +299,14 @@ src/jobops/
   agents/         narrative drafting, verification, orchestration interfaces
   api/            FastAPI health, jobs, scoring, ranking, and approval endpoints
   approvals/      human-review state machine
-  browser/        guarded Playwright inspection and dry-run planning
+  browser/        guarded Playwright inspection, semantic mapping, and dry-run planning
   db/             PostgreSQL models, sessions, repositories, approval persistence
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS adapters, source config, refresh runner, and CLI
   knowledge/      TruthStore, resume evidence, retrieval, question policy
   llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
-  models/         typed domain/query/evidence/retrieval/LLM/browser/approval models
+  models/         typed domain/query/evidence/retrieval/LLM/browser/mapping/approval models
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -304,8 +319,8 @@ tests/            unit, integration, and controlled browser tests
 
 Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, and M3.1 browser inspection cannot execute application submission.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, and the current M3 browser layers cannot execute live application submission.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, real-browser CI testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, semantic UI understanding, real-browser CI testing, observability, and analytics all live behind one product boundary.

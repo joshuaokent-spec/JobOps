@@ -36,7 +36,7 @@
 ## M3 — Browser Automation
 
 - [x] Playwright abstraction
-- [ ] Generic form-field detector
+- [x] Generic semantic form-field detector
 - [ ] Greenhouse browser adapter
 - [ ] Lever browser adapter
 - [ ] Workday research/prototype
