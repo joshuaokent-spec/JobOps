@@ -16,6 +16,40 @@ from jobops.models.browser_audit import (
     BrowserInspectionCapture,
 )
 
+_OMITTED = "[OMITTED]"
+_RAW_VALUE_KEYS = {
+    "answer",
+    "candidate_answer",
+    "candidate_value",
+    "current_value",
+    "entered_value",
+    "field_value",
+    "prefill",
+    "prefilled_value",
+    "response",
+    "selected_value",
+    "user_answer",
+    "user_value",
+    "value",
+}
+_SECRET_KEYS = {
+    "access_token",
+    "api_key",
+    "authorization_header",
+    "cookie",
+    "cookies",
+    "credential",
+    "credentials",
+    "csrf_token",
+    "id_token",
+    "password",
+    "refresh_token",
+    "secret",
+    "session",
+    "session_id",
+    "token",
+}
+
 
 class BrowserAuditBundleWriter:
     """Persist one correlated, privacy-sanitized browser audit bundle."""
@@ -89,7 +123,7 @@ class BrowserAuditBundleWriter:
             created_at=timestamp,
             source_url=sanitize_url(source_url) or source_url,
             vendor=vendor,
-            browser_engine=self._browser_engine(capture),
+            browser_engine=capture.browser_engine,
             redaction_applied=True,
             redacted_dom_values=capture.redacted_dom_values,
             live_writes_allowed=False,
@@ -115,6 +149,9 @@ class BrowserAuditBundleWriter:
 
     @classmethod
     def _sanitize_object(cls, value: Any, key: str | None = None) -> Any:
+        normalized_key = cls._normalize_key(key)
+        if normalized_key in _RAW_VALUE_KEYS or normalized_key in _SECRET_KEYS:
+            return _OMITTED
         if isinstance(value, dict):
             return {
                 str(child_key): cls._sanitize_object(child_value, str(child_key))
@@ -127,10 +164,14 @@ class BrowserAuditBundleWriter:
         return value
 
     @staticmethod
-    def _is_url_key(key: str | None) -> bool:
+    def _normalize_key(key: str | None) -> str:
         if key is None:
-            return False
-        normalized = key.casefold().replace("-", "_")
+            return ""
+        return key.casefold().replace("-", "_").replace(" ", "_")
+
+    @classmethod
+    def _is_url_key(cls, key: str | None) -> bool:
+        normalized = cls._normalize_key(key)
         return normalized in {
             "url",
             "source_url",
@@ -152,11 +193,3 @@ class BrowserAuditBundleWriter:
             separators=(",", ":"),
             ensure_ascii=False,
         ).encode("utf-8")
-
-    @staticmethod
-    def _browser_engine(capture: BrowserInspectionCapture):
-        # The capture contract intentionally does not contain browser session secrets.
-        # M3 currently captures through Chromium unless a future capture contract says otherwise.
-        from jobops.models.browser import BrowserEngine
-
-        return BrowserEngine.CHROMIUM
