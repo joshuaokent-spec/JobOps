@@ -25,9 +25,11 @@ def upgrade() -> None:
         sa.Column("vendor", sa.String(length=32), nullable=False),
         sa.Column("state_fingerprint", sa.String(length=64), nullable=False),
         sa.Column("prepared_payload_sha256", sa.String(length=64), nullable=False),
+        sa.Column("audit_run_id", sa.String(length=255), nullable=False),
+        sa.Column("browser_session_id", sa.String(length=255), nullable=False),
+        sa.Column("document_url_sha256", sa.String(length=64), nullable=False),
         sa.Column("submit_selector", sa.Text(), nullable=False),
         sa.Column("submit_control_sha256", sa.String(length=64), nullable=False),
-        sa.Column("audit_run_id", sa.String(length=255), nullable=True),
         sa.Column("authorized_by", sa.String(length=200), nullable=False),
         sa.Column("note", sa.Text(), nullable=False),
         sa.Column("status", sa.String(length=32), nullable=False),
@@ -36,6 +38,8 @@ def upgrade() -> None:
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("consumed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("revoked_by", sa.String(length=200), nullable=True),
+        sa.Column("revoke_note", sa.Text(), nullable=True),
         sa.ForeignKeyConstraint(["job_id"], ["jobs.job_id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("authorization_id"),
     )
@@ -44,14 +48,31 @@ def upgrade() -> None:
         "submit_authorizations",
         ["application_id"],
     )
-    op.create_index(op.f("ix_submit_authorizations_job_id"), "submit_authorizations", ["job_id"])
-    op.create_index(op.f("ix_submit_authorizations_vendor"), "submit_authorizations", ["vendor"])
+    op.create_index(
+        op.f("ix_submit_authorizations_job_id"),
+        "submit_authorizations",
+        ["job_id"],
+    )
+    op.create_index(
+        op.f("ix_submit_authorizations_vendor"),
+        "submit_authorizations",
+        ["vendor"],
+    )
     op.create_index(
         op.f("ix_submit_authorizations_audit_run_id"),
         "submit_authorizations",
         ["audit_run_id"],
     )
-    op.create_index(op.f("ix_submit_authorizations_status"), "submit_authorizations", ["status"])
+    op.create_index(
+        op.f("ix_submit_authorizations_browser_session_id"),
+        "submit_authorizations",
+        ["browser_session_id"],
+    )
+    op.create_index(
+        op.f("ix_submit_authorizations_status"),
+        "submit_authorizations",
+        ["status"],
+    )
     op.create_index(
         op.f("ix_submit_authorizations_attempt_id"),
         "submit_authorizations",
@@ -76,11 +97,18 @@ def upgrade() -> None:
         sa.Column("job_id", sa.String(length=255), nullable=False),
         sa.Column("vendor", sa.String(length=32), nullable=False),
         sa.Column("state_fingerprint", sa.String(length=64), nullable=False),
+        sa.Column("browser_session_id", sa.String(length=255), nullable=False),
+        sa.Column("document_url_sha256", sa.String(length=64), nullable=False),
         sa.Column("submit_selector", sa.Text(), nullable=False),
         sa.Column("submit_control_sha256", sa.String(length=64), nullable=False),
-        sa.Column("audit_run_id", sa.String(length=255), nullable=True),
+        sa.Column("audit_run_id", sa.String(length=255), nullable=False),
         sa.Column("status", sa.String(length=32), nullable=False),
-        sa.Column("submit_invoked", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column(
+            "submit_invoked",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.false(),
+        ),
         sa.Column("receipt_metadata", sa.JSON(), nullable=False, server_default="{}"),
         sa.Column("error_code", sa.String(length=100), nullable=True),
         sa.Column("error_detail", sa.Text(), nullable=True),
@@ -107,14 +135,31 @@ def upgrade() -> None:
         "submission_attempts",
         ["application_id"],
     )
-    op.create_index(op.f("ix_submission_attempts_job_id"), "submission_attempts", ["job_id"])
-    op.create_index(op.f("ix_submission_attempts_vendor"), "submission_attempts", ["vendor"])
+    op.create_index(
+        op.f("ix_submission_attempts_job_id"),
+        "submission_attempts",
+        ["job_id"],
+    )
+    op.create_index(
+        op.f("ix_submission_attempts_vendor"),
+        "submission_attempts",
+        ["vendor"],
+    )
+    op.create_index(
+        op.f("ix_submission_attempts_browser_session_id"),
+        "submission_attempts",
+        ["browser_session_id"],
+    )
     op.create_index(
         op.f("ix_submission_attempts_audit_run_id"),
         "submission_attempts",
         ["audit_run_id"],
     )
-    op.create_index(op.f("ix_submission_attempts_status"), "submission_attempts", ["status"])
+    op.create_index(
+        op.f("ix_submission_attempts_status"),
+        "submission_attempts",
+        ["status"],
+    )
     op.create_index(
         op.f("ix_submission_attempts_started_at"),
         "submission_attempts",
@@ -126,18 +171,32 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_submission_attempts_started_at"), table_name="submission_attempts")
     op.drop_index(op.f("ix_submission_attempts_status"), table_name="submission_attempts")
     op.drop_index(op.f("ix_submission_attempts_audit_run_id"), table_name="submission_attempts")
+    op.drop_index(
+        op.f("ix_submission_attempts_browser_session_id"),
+        table_name="submission_attempts",
+    )
     op.drop_index(op.f("ix_submission_attempts_vendor"), table_name="submission_attempts")
     op.drop_index(op.f("ix_submission_attempts_job_id"), table_name="submission_attempts")
     op.drop_index(op.f("ix_submission_attempts_application_id"), table_name="submission_attempts")
-    op.drop_index(op.f("ix_submission_attempts_authorization_id"), table_name="submission_attempts")
+    op.drop_index(
+        op.f("ix_submission_attempts_authorization_id"),
+        table_name="submission_attempts",
+    )
     op.drop_table("submission_attempts")
 
     op.drop_index(op.f("ix_submit_authorizations_expires_at"), table_name="submit_authorizations")
     op.drop_index(op.f("ix_submit_authorizations_created_at"), table_name="submit_authorizations")
     op.drop_index(op.f("ix_submit_authorizations_attempt_id"), table_name="submit_authorizations")
     op.drop_index(op.f("ix_submit_authorizations_status"), table_name="submit_authorizations")
+    op.drop_index(
+        op.f("ix_submit_authorizations_browser_session_id"),
+        table_name="submit_authorizations",
+    )
     op.drop_index(op.f("ix_submit_authorizations_audit_run_id"), table_name="submit_authorizations")
     op.drop_index(op.f("ix_submit_authorizations_vendor"), table_name="submit_authorizations")
     op.drop_index(op.f("ix_submit_authorizations_job_id"), table_name="submit_authorizations")
-    op.drop_index(op.f("ix_submit_authorizations_application_id"), table_name="submit_authorizations")
+    op.drop_index(
+        op.f("ix_submit_authorizations_application_id"),
+        table_name="submit_authorizations",
+    )
     op.drop_table("submit_authorizations")
