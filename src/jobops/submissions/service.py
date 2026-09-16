@@ -1,9 +1,11 @@
 import hashlib
 import json
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 from uuid import uuid4
 
+from jobops.browser.audit_redaction import sanitize_text, sanitize_url
 from jobops.models.submission import (
     PreparedSubmissionState,
     SubmissionAttempt,
@@ -15,7 +17,16 @@ from jobops.models.submission import (
     SubmissionReadinessResult,
     SubmitAuthorization,
     SubmitAuthorizationCreate,
+    SubmitAuthorizationRevoke,
 )
+
+_SENSITIVE_RECEIPT_KEY = re.compile(
+    r"(?:answer|value|token|auth|secret|password|passwd|session|cookie|credential|"
+    r"api[-_]?key|authorization|ssn|social[-_]?security)",
+    re.IGNORECASE,
+)
+_URL_KEY = re.compile(r"(?:^url$|_url$|^href$|^location$)", re.IGNORECASE)
+_OMITTED = "[OMITTED]"
 
 
 class SubmissionGateError(RuntimeError):
@@ -67,6 +78,8 @@ class SubmissionRepository(Protocol):
         authorization_id: str,
         *,
         revoked_at: datetime,
+        revoked_by: str,
+        revoke_note: str,
     ) -> SubmitAuthorization | None: ...
 
     def get_successful_attempt(self, application_id: str) -> SubmissionAttempt | None: ...
@@ -97,6 +110,13 @@ class SubmissionReadinessEvaluator:
         evaluated_at = _as_utc(now or datetime.now(UTC))
         blockers: list[SubmissionReadinessBlocker] = []
 
+        if (
+            state.audit_run_id is None
+            or state.audit_created_at is None
+            or state.browser_session_id is None
+            or state.document_url_sha256 is None
+        ):
+            blockers.append(SubmissionReadinessBlocker.MISSING_AUDIT_CONTEXT)
         if state.required_unresolved:
             blockers.append(SubmissionReadinessBlocker.UNRESOLVED_REQUIRED_FIELDS)
         if state.ambiguous_mappings:
@@ -178,15 +198,20 @@ class SubmissionGate:
                 f"application already has a successful submission: {request.state.application_id}"
             )
 
+        assert request.state.audit_run_id is not None
+        assert request.state.browser_session_id is not None
+        assert request.state.document_url_sha256 is not None
         authorization = SubmitAuthorization(
             application_id=request.state.application_id,
             job_id=request.state.job_id,
             vendor=request.state.vendor,
             state_fingerprint=result.state_fingerprint,
             prepared_payload_sha256=request.state.prepared_payload_sha256,
+            audit_run_id=request.state.audit_run_id,
+            browser_session_id=request.state.browser_session_id,
+            document_url_sha256=request.state.document_url_sha256,
             submit_selector=request.state.submit_selector,
             submit_control_sha256=request.state.submit_control_sha256,
-            audit_run_id=request.state.audit_run_id,
             authorized_by=request.authorized_by.strip(),
             note=request.note.strip(),
             status=SubmissionAuthorizationStatus.ACTIVE,
@@ -198,6 +223,7 @@ class SubmissionGate:
     def revoke(
         self,
         authorization_id: str,
+        request: SubmitAuthorizationRevoke,
         *,
         now: datetime | None = None,
     ) -> SubmitAuthorization:
@@ -213,6 +239,8 @@ class SubmissionGate:
         revoked = self.repository.revoke_authorization(
             authorization_id,
             revoked_at=_as_utc(now or datetime.now(UTC)),
+            revoked_by=request.revoked_by.strip(),
+            revoke_note=request.note.strip(),
         )
         if revoked is None:
             raise SubmissionAuthorizationNotFoundError(
@@ -258,6 +286,8 @@ class SubmissionGate:
                 job_id=claimed.job_id,
                 vendor=claimed.vendor,
                 state_fingerprint=claimed.state_fingerprint,
+                browser_session_id=claimed.browser_session_id,
+                document_url_sha256=claimed.document_url_sha256,
                 submit_selector=claimed.submit_selector,
                 submit_control_sha256=claimed.submit_control_sha256,
                 audit_run_id=claimed.audit_run_id,
@@ -268,13 +298,16 @@ class SubmissionGate:
         )
 
         try:
-            outcome = executor.execute(claimed, request.state)
-        except Exception as exc:
+            outcome = _sanitize_outcome(executor.execute(claimed, request.state))
+        except Exception:
             outcome = SubmissionExecutionOutcome(
                 status=SubmissionAttemptStatus.INDETERMINATE,
                 submit_invoked=True,
                 error_code="executor_exception",
-                error_detail=str(exc)[:1000] or exc.__class__.__name__,
+                error_detail=(
+                    "submission executor raised an exception after authorization was consumed; "
+                    "manual reconciliation is required"
+                ),
             )
 
         completed_at = datetime.now(UTC)
@@ -314,12 +347,44 @@ class SubmissionGate:
             raise SubmissionAuthorizationInvalidError("authorization job mismatch")
         if state.vendor is not authorization.vendor:
             raise SubmissionAuthorizationInvalidError("authorization ATS/vendor mismatch")
+        if state.audit_run_id != authorization.audit_run_id:
+            raise SubmissionAuthorizationInvalidError("authorization audit context changed")
+        if state.browser_session_id != authorization.browser_session_id:
+            raise SubmissionAuthorizationInvalidError("authorized browser session changed")
+        if state.document_url_sha256 != authorization.document_url_sha256:
+            raise SubmissionAuthorizationInvalidError("authorized document identity changed")
         if state.submit_selector != authorization.submit_selector:
             raise SubmissionAuthorizationInvalidError("authorized submit selector changed")
         if state.submit_control_sha256 != authorization.submit_control_sha256:
             raise SubmissionAuthorizationInvalidError("authorized submit control changed")
         if state.prepared_payload_sha256 != authorization.prepared_payload_sha256:
             raise SubmissionAuthorizationInvalidError("prepared application payload changed")
+
+
+def _sanitize_outcome(outcome: SubmissionExecutionOutcome) -> SubmissionExecutionOutcome:
+    metadata: dict[str, str | int | float | bool | None] = {}
+    for key, value in outcome.receipt_metadata.items():
+        if _SENSITIVE_RECEIPT_KEY.search(key):
+            metadata[key] = _OMITTED
+            continue
+        if isinstance(value, str):
+            if _URL_KEY.search(key):
+                metadata[key] = sanitize_url(value) or value
+            else:
+                metadata[key] = sanitize_text(value) or value
+        else:
+            metadata[key] = value
+
+    return outcome.model_copy(
+        update={
+            "receipt_metadata": metadata,
+            "error_detail": (
+                "submission executor reported an error"
+                if outcome.error_detail
+                else None
+            ),
+        }
+    )
 
 
 def _as_utc(value: datetime) -> datetime:
