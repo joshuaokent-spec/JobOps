@@ -91,3 +91,79 @@ class ApprovalRecord(Base):
         nullable=False,
     )
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SubmitAuthorizationRecord(Base):
+    __tablename__ = "submit_authorizations"
+
+    authorization_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    application_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    job_id: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey("jobs.job_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    vendor: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    state_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    prepared_payload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    submit_selector: Mapped[str] = mapped_column(Text, nullable=False)
+    submit_control_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    audit_run_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    authorized_by: Mapped[str] = mapped_column(String(200), nullable=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    attempt_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SubmissionAttemptRecord(Base):
+    __tablename__ = "submission_attempts"
+
+    attempt_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    authorization_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("submit_authorizations.authorization_id", ondelete="RESTRICT"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    application_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    job_id: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey("jobs.job_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    vendor: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    state_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    submit_selector: Mapped[str] = mapped_column(Text, nullable=False)
+    submit_control_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    audit_run_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    submit_invoked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    receipt_metadata: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    error_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    successful_submission_key: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        unique=True,
+    )
