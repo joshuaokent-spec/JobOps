@@ -23,6 +23,14 @@ _PII_KEY = re.compile(
 )
 _EMAIL_VALUE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 _PHONE_VALUE = re.compile(r"^\+?[\d().\-\s]{7,}$")
+_EMAIL_TEXT = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
+_PHONE_TEXT = re.compile(r"\b\+?\d[\d().\-\s]{6,}\d\b")
+_SSN_TEXT = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
+_LABELLED_PII_TEXT = re.compile(
+    r"\b(?:email|e-mail|phone|mobile|address|street address|work authorization|"
+    r"sponsorship|gender|race|ethnicity|disability|veteran status|consent)\s*:\s*[^|;\n]+",
+    re.IGNORECASE,
+)
 _REDACTED = "[REDACTED]"
 
 SCREENSHOT_REDACTION_SCRIPT = r"""
@@ -133,22 +141,76 @@ def sanitize_url(url: str | None) -> str | None:
     )
 
 
+def sanitize_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    sanitized = _LABELLED_PII_TEXT.sub(_redact_labelled_value, value)
+    sanitized = _EMAIL_TEXT.sub(_REDACTED, sanitized)
+    sanitized = _PHONE_TEXT.sub(_REDACTED, sanitized)
+    sanitized = _SSN_TEXT.sub(_REDACTED, sanitized)
+    return sanitized
+
+
 def sanitize_page_snapshot(page: BrowserPageSnapshot) -> BrowserPageSnapshot:
-    forms = [
-        form.model_copy(update={"action": sanitize_url(form.action)})
-        for form in page.forms
-    ]
+    forms = []
+    for form in page.forms:
+        fields = []
+        for field in form.fields:
+            options = [
+                option.model_copy(
+                    update={
+                        "value": sanitize_text(option.value) or option.value,
+                        "label": sanitize_text(option.label) or option.label,
+                    }
+                )
+                for option in field.options
+            ]
+            fields.append(
+                field.model_copy(
+                    update={
+                        "label": sanitize_text(field.label),
+                        "accessible_name": sanitize_text(field.accessible_name),
+                        "placeholder": sanitize_text(field.placeholder),
+                        "options": options,
+                    }
+                )
+            )
+        forms.append(
+            form.model_copy(
+                update={
+                    "action": sanitize_url(form.action),
+                    "fields": fields,
+                }
+            )
+        )
+
     actions = [
-        action.model_copy(update={"href": sanitize_url(action.href)})
+        action.model_copy(
+            update={
+                "text": sanitize_text(action.text),
+                "accessible_name": sanitize_text(action.accessible_name),
+                "href": sanitize_url(action.href),
+            }
+        )
         for action in page.page_actions
     ]
     return page.model_copy(
         update={
             "url": sanitize_url(page.url) or page.url,
+            "title": sanitize_text(page.title) or page.title,
+            "headings": [sanitize_text(heading) or heading for heading in page.headings],
             "forms": forms,
             "page_actions": actions,
         }
     )
+
+
+def _redact_labelled_value(match: re.Match[str]) -> str:
+    text = match.group(0)
+    colon = text.find(":")
+    if colon < 0:
+        return _REDACTED
+    return f"{text[: colon + 1]} {_REDACTED}"
 
 
 def _should_redact_query_value(key: str, value: str) -> bool:
