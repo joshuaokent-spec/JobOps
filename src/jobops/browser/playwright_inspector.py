@@ -339,15 +339,14 @@ class PlaywrightBrowserInspector:
 
         context.route("**/*", handler)
 
-    @classmethod
     def _capture(
-        cls,
+        self,
         page: Page,
         *,
         blocked_requests: int,
         root_url_override: str | None = None,
     ) -> BrowserInspectionCapture:
-        documents = cls._snapshots(
+        documents = self._snapshots(
             page,
             blocked_requests=blocked_requests,
             root_url_override=root_url_override,
@@ -360,6 +359,7 @@ class PlaywrightBrowserInspector:
         return BrowserInspectionCapture(
             documents=documents,
             screenshot_png=screenshot,
+            browser_engine=self.config.engine,
             redacted_dom_values=redacted_dom_values,
         )
 
