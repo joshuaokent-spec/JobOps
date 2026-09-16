@@ -1,34 +1,38 @@
 # JobOps
 
-**JobOps** is an evidence-grounded, human-in-the-loop job-search intelligence platform for discovering, ranking, preparing, and tracking job applications.
+**JobOps** is an evidence-grounded, human-in-the-loop job-search intelligence platform for discovering, ranking, preparing, auditing, and tracking job applications.
 
-The project is intentionally designed as a portfolio-grade system spanning data engineering, data science, machine learning, agent orchestration, retrieval, local AI inference, API design, browser automation, and analytics.
+The project is intentionally designed as a portfolio-grade system spanning data engineering, data science, machine learning, agent orchestration, retrieval, local AI inference, API design, browser automation, privacy engineering, and analytics.
 
 ## Core principles
 
 - **Truth before fluency:** generated answers must be grounded in verified candidate facts.
-- **Human approval before submission:** the system may prepare applications, but consequential submission stays behind an approval gate.
+- **Human approval before submission:** preparation and consequential submission are separate capabilities.
 - **ML where prediction helps, LLMs where language helps:** ranking and outcome prediction are modeled separately from natural-language generation.
-- **Local-first language inference:** candidate material and ambiguous UI classification can use an on-device Foundry Local model without coupling agents to a specific runtime.
+- **Local-first language inference:** candidate material and ambiguous UI classification can use an on-device Foundry Local model without coupling agents to one runtime.
 - **Reproducible data pipelines:** ingest, normalize, deduplicate, score, and track jobs as structured data.
-- **Auditable decisions:** every score, generated answer, verification finding, approval decision, browser mapping, ATS detection, workflow state, blocked action, and preparation step should be traceable.
-- **Browser safety by construction:** browser inspection and preparation are separate from consequential writes and submission.
+- **Auditable decisions:** scores, drafts, verification findings, approvals, browser mappings, ATS detection, workflow state, blocked actions, and audit artifacts are traceable.
+- **Browser safety by construction:** browser inspection, preparation, audit capture, and final submission remain distinct trust boundaries.
+- **Privacy by minimization:** browser audit artifacts preserve the evidence needed to explain a decision without becoming a candidate-answer or credential archive.
 
 ## Current milestone: M3 — Browser Automation
 
-M1 Job Intelligence and M2 Application Intelligence are complete. M3 now has a guarded Playwright browser abstraction, semantic form-field understanding, Greenhouse and Lever browser preparation adapters, and a stateful Workday workflow prototype, with real-Chromium CI coverage across these boundaries.
+M1 Job Intelligence and M2 Application Intelligence are complete. M3 now includes a guarded Playwright browser abstraction, semantic form understanding, Greenhouse and Lever preparation adapters, a stateful Workday workflow prototype, and privacy-safe browser audit bundles. Real headless Chromium is exercised in CI across the browser safety boundary.
 
 JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
 
-M3.1 can open employer/ATS pages in isolated Playwright contexts, inventory native form controls, and produce a typed dry-run structural plan. M3.2 maps those controls into application semantics such as contact data, resume/CV, professional links, salary, sponsorship, work authorization, narrative prompts, EEO/self-identification fields, and consent/attestation controls. Those mappings reuse the existing Green/Yellow/Red M2 policy and produce a second non-executing semantic preparation plan.
+M3 is deliberately incremental:
 
-M3.3 adds a Greenhouse browser preparation adapter that can detect Greenhouse-hosted and embedded/iFrame application experiences, isolate the application form from unrelated careers-page controls, preserve Greenhouse job/source metadata when present, and route the selected form through the existing semantic mapper and review policy.
+- **M3.1 — Guarded browser inspection:** isolated Playwright contexts, structural form inventory, blocked mutation requests, and non-executing dry-run plans.
+- **M3.2 — Semantic field understanding:** deterministic-first mapping into application semantics with Green/Yellow/Red policy reuse and optional model assistance only for unresolved controls.
+- **M3.3 — Greenhouse:** hosted/embedded application detection, application-form isolation, metadata preservation, and semantic preparation.
+- **M3.4 — Lever:** hosted/embedded application detection, posting/source metadata preservation, false-positive resistance, and semantic preparation.
+- **M3.5 — Workday:** stateful wizard modeling for resume, contact, experience, questions, disclosures, terms, Candidate Home/account access, and final review. `Next`, `Save for Later`, account actions, Apply with LinkedIn, and Submit remain typed blocked operations because Workday progression can itself be consequential.
+- **M3.6 — Browser audit artifacts:** privacy-redacted screenshots, sanitized structural/semantic/ATS JSON, correlated manifests, SHA-256 integrity records, and a storage abstraction that keeps production artifacts out of the repository.
 
-M3.4 adds the same vendor-specific preparation layer for Lever. It recognizes Lever posting/apply URL structure and verified Lever form actions, preserves account/site, posting UUID, `lever-source`, and `lever-origin` metadata, supports hosted and embedded forms, rejects generic `/apply` false positives, and preserves Red review for EEO, authorization, consent, and other consequential controls.
+The remaining M3 milestone is the **separate explicit executable/submit gate**. No current M3 path can submit a live job application.
 
-M3.5 treats Workday differently: as a stateful multi-step application wizard. The shared browser snapshot now inventories page headings and page-level actions in addition to forms, and the Workday prototype classifies visible states such as resume entry, My Information, My Experience, application questions, voluntary disclosures, terms/consent, Candidate Home/account access, and final review. `Next`, `Save for Later`, account creation/sign-in, Apply with LinkedIn, and final Submit are surfaced as typed blocked operations rather than executable clicks. This matters because Workday can persist an application draft when the wizard advances. The prototype performs no live Workday writes.
-
-### M1 capabilities implemented
+## M1 capabilities
 
 - Greenhouse and Lever public-feed adapters;
 - canonical normalization with stable source identities and audit metadata;
@@ -41,7 +45,7 @@ M3.5 treats Workday differently: as a stateful multi-step application wizard. Th
 - idempotent source refresh with stale-posting deactivation;
 - JSON ingestion metrics and scheduler-friendly CLI execution.
 
-### M2 capabilities implemented
+## M2 capabilities
 
 - typed career evidence with provenance, verification state, metrics, role-family tags, skills, and retrieval-ready text;
 - resume-family definitions over one master evidence base rather than duplicated factual resumes;
@@ -53,57 +57,82 @@ M3.5 treats Workday differently: as a stateful multi-step application wizard. Th
 - provider-neutral typed LLM requests/responses and an `LLMProvider` protocol;
 - OpenAI-compatible HTTP inference with Microsoft Foundry Local as the default development path;
 - evidence-grounded narrative drafting that must cite supplied evidence IDs;
-- rejection of unverified context, fabricated evidence IDs, malformed drafts, and invalid review routes;
-- layered claim-level verification with deterministic vetoes for unsupported metrics, technologies, credentials, and other concrete evidence mismatches;
-- optional semantic entailment review that may escalate to review but cannot override deterministic blockers;
+- layered claim-level verification with deterministic vetoes for unsupported metrics, technologies, credentials, and other concrete mismatches;
 - persistent PostgreSQL human approval queue with proposed, edited, and final answer separation;
-- approval states for pending, approved, rejected, and revision-required content;
-- idempotent identical review decisions and rejection of conflicting second decisions;
 - explicit `approved_for_preparation` versus `submitted` separation;
-- approval list/get/decision API endpoints with durable timestamps and audit metadata;
 - mocked/fake model testing so CI remains model-download-free;
 - sanitized public candidate evidence with no production PII.
 
-### M3 capabilities implemented so far
+## M3 capabilities implemented
 
-- optional Playwright browser dependency rather than a mandatory base-runtime dependency;
-- typed browser session, page, form, field, option, structural-plan, semantic-mapping, semantic-plan, ATS-preparation, Workday-state, and blocked-action contracts;
+### Guarded browser foundation
+
+- optional Playwright dependency rather than a mandatory base-runtime dependency;
+- typed browser session, page, form, field, option, structural-plan, semantic-plan, ATS-preparation, Workday-state, blocked-action, capture, and audit-manifest contracts;
 - isolated non-persistent browser contexts with service workers blocked by default;
-- native form inventory for input, textarea, select, checkbox, radio, button, and file controls;
-- page-level heading and action inventory for stateful wizard/application UI;
-- label, accessible-name, required/disabled state, option, and stable-selector extraction;
-- deterministic structural dry-run planning for fill/select/choose/upload/review/skip operations;
-- submit-capable controls explicitly represented as `blocked_submit` rather than executable actions;
-- dry-run blocking of `POST`, `PUT`, `PATCH`, and `DELETE` browser requests;
-- post-load document-navigation blocking while the submission gate is closed;
+- inventory for native inputs, textareas, selects, checkboxes, radios, buttons, file controls, headings, and page-level actions;
+- stable selectors plus label/accessibility/required/disabled metadata;
+- blocked `POST`, `PUT`, `PATCH`, and `DELETE` requests while the write gate is closed;
+- blocked post-load document navigation while the write gate is closed;
 - DOM guards for submit events, `form.submit()`, and `form.requestSubmit()`;
-- guarded top-document plus meaningful child-frame inspection for embedded ATS applications and wizard states;
-- deterministic semantic mapping for identity/contact fields, professional links, documents, preferences, legal/consequential fields, narrative prompts, demographics, consent/attestations, unknowns, and submit controls;
-- explicit confidence, matched signals, and ambiguity handling rather than silent guesses;
-- direct reuse of M2 `QuestionCategory`, `HandlingRoute`, and Green/Yellow/Red review policy inside browser automation;
-- optional provider-neutral model-assisted classification only for unresolved controls;
-- model-assisted mappings prevented from becoming Green autofill; ordinary assisted mappings stay Yellow and sensitive ones stay Red;
-- semantic preparation planning that routes fields to verified fact resolution, draft-with-review, human review, escalation, or blocked submit without writing to the browser;
-- Greenhouse context detection using URL, query, form, action, and field-name evidence with surfaced confidence and reasons;
-- Greenhouse-hosted and embedded/iFrame application preparation support using controlled real-browser fixtures;
-- isolation of Greenhouse application forms from unrelated careers-page search/decorative forms;
-- preservation of `gh_jid`, `gh_src`, and board-token metadata when available;
-- fail-closed rejection of generic non-Greenhouse forms by the Greenhouse adapter;
-- Lever context detection using host, posting UUID, `/apply`, source/origin, verified form action, and recognizable candidate-control evidence;
-- Lever-hosted and embedded/iFrame application preparation support using controlled real-browser fixtures;
-- preservation of site/account token, posting UUID, `lever-source`, and `lever-origin` metadata when available;
-- explicit rejection of generic external `/apply` forms and Lever posting pages without an application form;
-- cross-ATS consent/attestation semantics routed Red to human review;
-- Workday-specific workflow-state modeling without collapsing the wizard into one form;
-- Workday step classification for account access, resume, contact information, experience, application questions, voluntary disclosures, terms/consent, final review, and unknown states;
-- preservation of available Workday tenant/site/locale/requisition/source metadata as audit context;
-- explicit blocked Workday actions for Next/Continue, Save for Later, Sign In, Create Account, Apply with LinkedIn, Submit, and other progression;
-- Workday job-detail false-positive rejection rather than treating global Apply/Sign In controls as application-wizard proof;
-- embedded Workday child-frame state support with verified parent-context inheritance and no-form final-review coverage;
-- LinkedIn account/browser automation kept outside the ATS automation layer while LinkedIn profile URL remains a valid candidate data field;
-- real headless Chromium tests against controlled application/wizard states in GitHub Actions, including browser-snapshot-to-semantic-policy and ATS-specific integration.
+- guarded top-document plus meaningful child-frame inspection;
+- submit-capable controls represented as blocked operations instead of executable actions.
 
-See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-retrieval.md`, `docs/question-classifier.md`, `docs/llm-providers.md`, `docs/narrative-drafting.md`, `docs/evidence-verifier.md`, `docs/approval-queue.md`, `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, `docs/lever-browser-adapter.md`, and `docs/workday-browser-prototype.md` for the current system contracts.
+### Semantic policy
+
+- deterministic semantic mapping for identity/contact data, professional links, documents, preferences, legal/consequential questions, narratives, demographics, consent/attestation, unknowns, and submit controls;
+- surfaced confidence, matched signals, and ambiguity rather than silent guesses;
+- direct reuse of M2 `QuestionCategory`, `HandlingRoute`, and Green/Yellow/Red review policy;
+- optional provider-neutral model assistance only for unresolved controls;
+- model-assisted mappings prevented from becoming Green autofill;
+- sensitive and consequential controls remain Red even when a model can classify them;
+- semantic preparation plans route fields to verified facts, draft-with-review, human review, escalation, or blocked submit without writing to the browser.
+
+### ATS/workflow adaptation
+
+- Greenhouse hosted and embedded/iFrame preparation with `gh_jid`, `gh_src`, and board metadata preservation when available;
+- Greenhouse application-form isolation from unrelated careers-page controls;
+- Lever hosted and embedded/iFrame preparation with account/site, posting UUID, `lever-source`, and `lever-origin` preservation when available;
+- Lever rejection of generic external `/apply` pages and posting pages without application-form evidence;
+- Workday state modeling without collapsing the wizard into a single form;
+- Workday classification for account access, resume, contact information, experience, application questions, voluntary disclosures, terms/consent, final review, and unknown states;
+- available Workday tenant/site/locale/requisition/source metadata preserved as context;
+- Workday `Next/Continue`, Save for Later, Sign In, Create Account, Apply with LinkedIn, Submit, and other progression remain blocked;
+- Workday job-detail pages are not mistaken for application-wizard state merely because they expose Apply/Sign In;
+- embedded Workday child-frame states inherit verified parent Workday context while no-form final review remains inspectable;
+- LinkedIn account/browser automation remains outside the ATS automation layer while a LinkedIn profile URL can still be candidate data.
+
+### Privacy-safe audit artifacts
+
+M3.6 can emit one correlated audit bundle per browser inspection/preparation run:
+
+```text
+artifacts/browser-audit/<run-id>/
+  screenshot.png
+  browser-snapshot.json
+  semantic-plan.json
+  ats-context.json
+  manifest.json
+```
+
+The audit layer provides:
+
+- full-page screenshot capture inside the same guarded Playwright context used by inspection;
+- DOM redaction before screenshot pixels are captured;
+- clearing/masking of entered input, textarea, select, checkbox/radio, and contenteditable state;
+- masking of visible email, phone, SSN-shaped, and labelled sensitive values;
+- URL sanitization that removes fragments and masks credential/session/PII query values while preserving safe job/source attribution where possible;
+- structural-text sanitization for titles, headings, labels, placeholders, options, and page actions that echo PII;
+- defensive omission of candidate answer/value fields and credential/token/session fields from semantic/ATS JSON payloads;
+- deterministic JSON serialization for reproducibility;
+- SHA-256 and byte-length integrity records for persisted audit payloads;
+- manifest metadata for run ID, UTC timestamp, sanitized source URL, vendor, browser engine, redaction count, and explicit non-write/non-submit state;
+- a `BrowserAuditArtifactStore` protocol plus a private local development implementation;
+- path-traversal protection for local artifact run IDs/file names;
+- `artifacts/` gitignored so private production audit material cannot be accidentally committed through normal workflows;
+- synthetic real-Chromium CI coverage proving screenshot capture does not weaken mutation blocking.
+
+See `docs/browser-audit-artifacts.md` for the privacy, retention, storage, and integrity contract.
 
 ## Releases
 
@@ -130,22 +159,23 @@ See `docs/resume-evidence.md`, `docs/resume-family-selector.md`, `docs/evidence-
 ### M3 — Application Automation — in progress
 
 - guarded Playwright abstraction — complete;
-- semantic generic form-field detection and M2 policy mapping — complete;
+- semantic generic field detection and M2 policy mapping — complete;
 - Greenhouse browser preparation adapter — complete;
 - Lever browser preparation adapter — complete;
 - Workday research/stateful prototype — complete;
-- controlled resume/document field preparation — future executable slice;
-- screenshot/audit artifacts — next;
-- separate explicit final submit gate.
+- privacy-safe screenshot/audit artifacts — complete;
+- separate explicit executable/final submit gate — remaining.
 
 ### M4 — Learning System
 
 - user-feedback labels;
-- learned ranking model;
+- learned ranking baseline;
+- gradient-boosted ranking model;
 - resume-selection model;
 - application-outcome analytics;
 - interview/callback prediction;
-- model evaluation and experiment tracking.
+- experiment tracking;
+- calibration and drift checks.
 
 ## Architecture
 
@@ -205,11 +235,16 @@ Application Question -> Risk/Review Classifier --------------+          |
                                                \                    /
                                                 \       blocked actions
                                                  \                  /
+                                                             v
+                                                Audit Bundle Writer
+                                                /       |        \
+                                         redaction    hashes    manifest
+                                                             |
                                                              X
-                                             no live ATS writes / no submit
+                                         no live ATS writes / no submit
                                                              |
                                                              v
-                                                Future Explicit Gates
+                                             Future Explicit Submit Gate
                                                              |
                                                              v
                                                   Application Tracking
@@ -260,16 +295,25 @@ Use the model alias at the Foundry CLI layer to select the best local hardware v
 
 See `docs/llm-providers.md` for provider configuration and the local-inference safety boundary.
 
-## Browser dry-run development
+## Browser development
 
-Install the optional browser stack and Chromium only when working on M3 automation:
+Install the optional browser stack and Chromium only when working on M3:
 
 ```bash
 pip install -e ".[dev,browser]"
 python -m playwright install chromium
 ```
 
-M3.1 exposes guarded structural inspection. M3.2 adds deterministic-first semantic field understanding plus an optional local-model fallback for unresolved controls. M3.3 adds Greenhouse-specific detection, application-form isolation, metadata preservation, and embedded-frame support. M3.4 adds the parallel Lever preparation adapter plus a generic Red consent/attestation semantic. M3.5 extends the shared snapshot with headings/page actions and adds a Workday-specific read-only workflow-state prototype because Workday progression can itself be consequential. All of these layers reuse the generic browser and semantic-policy boundaries. They do not submit live applications, and the Workday prototype does not advance or save the wizard. See `docs/browser-dry-run.md`, `docs/semantic-form-mapping.md`, `docs/greenhouse-browser-adapter.md`, `docs/lever-browser-adapter.md`, and `docs/workday-browser-prototype.md` for the browser-policy contracts.
+M3.1–M3.6 share the same browser and semantic-policy safety boundaries. Audit capture does not create a second, less-guarded browser path: screenshot capture runs inside the existing isolated context after a privacy-redaction pass, while mutation/network/submission guards remain active.
+
+Current browser contracts:
+
+- `docs/browser-dry-run.md`
+- `docs/semantic-form-mapping.md`
+- `docs/greenhouse-browser-adapter.md`
+- `docs/lever-browser-adapter.md`
+- `docs/workday-browser-prototype.md`
+- `docs/browser-audit-artifacts.md`
 
 ## Job ingestion
 
@@ -334,14 +378,14 @@ src/jobops/
   agents/         narrative drafting, verification, orchestration interfaces
   api/            FastAPI health, jobs, scoring, ranking, and approval endpoints
   approvals/      human-review state machine
-  browser/        guarded Playwright inspection, semantic mapping, ATS/workflow adapters, dry-run planning
+  browser/        guarded inspection, semantic mapping, ATS/workflow adapters, audit artifacts
   db/             PostgreSQL models, sessions, repositories, approval persistence
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS feed adapters, source config, refresh runner, and CLI
   knowledge/      TruthStore, resume evidence, retrieval, question policy
   llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
-  models/         typed domain/query/evidence/retrieval/LLM/browser/mapping/ATS/workflow/approval models
+  models/         typed domain/evidence/LLM/browser/ATS/workflow/audit/approval contracts
   normalization/  canonicalization plus deterministic/semantic deduplication
 
 data/examples/    sanitized runnable sample data
@@ -352,10 +396,14 @@ tests/            unit, integration, and controlled browser tests
 
 ## Safety and privacy
 
-Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, or legal-identification data. Use `.env`, private runtime configuration, and external databases/secrets managers for those values.
+Do **not** commit production candidate data, credentials, API keys, browser cookies, recruiter correspondence, legal-identification data, or production browser audit artifacts. Use `.env`, private runtime configuration, external databases/secrets managers, and private artifact storage for those values.
 
-JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, ATS-specific detection cannot lower review requirements, consent/attestation controls cannot be answered automatically, and the current M3 browser layers cannot execute live application submission. Workday wizard progression, draft persistence, Candidate Home authentication/account creation, and Apply with LinkedIn also remain non-executable in M3.5.
+JobOps should never invent qualifications, certifications, work authorization, legal attestations, or other candidate facts. Unknown consequential questions must be escalated for human review. Language-model output cannot override deterministic review policy, blocked verification cannot be approved through the queue, approval cannot trigger final submission on its own, model-assisted browser mappings cannot become Green autofill decisions, ATS-specific detection cannot lower review requirements, and consent/attestation controls cannot be answered automatically.
+
+Browser auditability does not weaken those controls. Audit screenshots are redacted before capture; structural/semantic/ATS JSON is sanitized before persistence; raw candidate-answer/value and credential/session fields are omitted defensively; persisted audit payloads receive integrity hashes; and private artifact roots are gitignored. Audit generation cannot open the write gate or submit an application.
+
+Workday wizard progression, employer-side draft persistence, Candidate Home authentication/account creation, Apply with LinkedIn, and final application submission remain non-executable.
 
 ## Portfolio goal
 
-This repository is meant to demonstrate an end-to-end intelligent system rather than a thin LLM wrapper: custom data pipelines, explainable baseline scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, durable auditability, guarded browser automation, semantic UI understanding, reusable ATS-specific adaptation, stateful workflow modeling, iframe handling, source-attribution preservation, consequential-action analysis, real-browser CI testing, observability, and analytics all live behind one product boundary.
+This repository is meant to demonstrate an end-to-end intelligent decision system rather than a thin LLM wrapper: custom data pipelines, explainable scoring, semantic ML, provenance-aware RAG, local/private inference, layered hallucination controls, human-in-the-loop state management, guarded browser automation, semantic UI understanding, reusable ATS-specific adaptation, stateful workflow modeling, iframe handling, source-attribution preservation, consequential-action analysis, privacy-aware observability, artifact integrity, real-browser CI testing, and analytics all live behind one product boundary.
