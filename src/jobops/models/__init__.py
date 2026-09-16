@@ -26,6 +26,13 @@ from jobops.models.browser import (
     DryRunAction,
     DryRunOperation,
 )
+from jobops.models.browser_audit import (
+    BrowserAuditArtifact,
+    BrowserAuditArtifactKind,
+    BrowserAuditManifest,
+    BrowserAuditVendor,
+    BrowserInspectionCapture,
+)
 from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
 from jobops.models.draft_verification import (
     DraftVerificationRequest,
@@ -95,11 +102,16 @@ __all__ = [
     "ApprovalPage",
     "ApprovalReason",
     "ApprovalStatus",
+    "BrowserAuditArtifact",
+    "BrowserAuditArtifactKind",
+    "BrowserAuditManifest",
+    "BrowserAuditVendor",
     "BrowserDryRunPlan",
     "BrowserEngine",
     "BrowserFieldDescriptor",
     "BrowserFieldKind",
     "BrowserFormSnapshot",
+    "BrowserInspectionCapture",
     "BrowserOption",
     "BrowserPageActionDescriptor",
     "BrowserPageSnapshot",

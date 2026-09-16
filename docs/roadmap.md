@@ -40,7 +40,7 @@
 - [x] Greenhouse browser adapter
 - [x] Lever browser adapter
 - [x] Workday research/stateful prototype
-- [ ] Screenshot/audit artifacts
+- [x] Screenshot/audit artifacts
 - [ ] Explicit submit gate
 
 ## M4 — Learning System

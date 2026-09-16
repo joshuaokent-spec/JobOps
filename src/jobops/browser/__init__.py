@@ -1,4 +1,14 @@
 from jobops.browser.assisted_field_classifier import AssistedSemanticFieldClassifier
+from jobops.browser.audit import BrowserAuditBundleWriter
+from jobops.browser.audit_redaction import (
+    sanitize_page_snapshot,
+    sanitize_text,
+    sanitize_url,
+)
+from jobops.browser.audit_store import (
+    BrowserAuditArtifactStore,
+    LocalBrowserAuditArtifactStore,
+)
 from jobops.browser.base import (
     BrowserAdapter,
     BrowserNavigationBlockedError,
@@ -15,6 +25,8 @@ from jobops.browser.workday import WorkdayBrowserPrototype, WorkdayDetectionErro
 __all__ = [
     "AssistedSemanticFieldClassifier",
     "BrowserAdapter",
+    "BrowserAuditArtifactStore",
+    "BrowserAuditBundleWriter",
     "BrowserDryRunPlanner",
     "BrowserNavigationBlockedError",
     "BrowserPolicyError",
@@ -22,9 +34,13 @@ __all__ = [
     "GreenhouseDetectionError",
     "LeverBrowserAdapter",
     "LeverDetectionError",
+    "LocalBrowserAuditArtifactStore",
     "SemanticFieldClassifier",
     "SemanticPreparationPlanner",
     "SubmissionBlockedError",
     "WorkdayBrowserPrototype",
     "WorkdayDetectionError",
+    "sanitize_page_snapshot",
+    "sanitize_text",
+    "sanitize_url",
 ]
