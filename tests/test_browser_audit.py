@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 
 from jobops.browser.audit import BrowserAuditBundleWriter
-from jobops.browser.audit_redaction import sanitize_url
+from jobops.browser.audit_redaction import sanitize_text, sanitize_url
 from jobops.browser.audit_store import LocalBrowserAuditArtifactStore
 from jobops.browser.playwright_inspector import PlaywrightBrowserInspector
 from jobops.models.browser import (
@@ -32,6 +32,13 @@ def test_sanitize_url_preserves_safe_attribution_and_redacts_sensitive_values() 
     assert query["email"] == ["[REDACTED]"]
     assert query["token"] == ["[REDACTED]"]
     assert parsed.fragment == ""
+
+
+def test_sanitize_text_masks_structural_pii() -> None:
+    assert sanitize_text("candidate@example.com") == "[REDACTED]"
+    assert sanitize_text("Call 517-555-0123") == "Call [REDACTED]"
+    assert sanitize_text("Address: 123 Main Street") == "Address: [REDACTED]"
+    assert sanitize_text("General application guidance") == "General application guidance"
 
 
 def test_capture_html_redacts_dom_before_screenshot_and_blocks_mutating_requests() -> None:
@@ -82,13 +89,13 @@ def test_bundle_writer_persists_correlated_hashed_sanitized_artifacts(tmp_path: 
             "https://jobs.example.com/apply?source=Portfolio&"
             "email=candidate@example.com&token=topsecret123"
         ),
-        title="Application",
-        headings=["Application"],
+        title="Application for candidate@example.com",
+        headings=["Phone: 517-555-0123"],
         page_actions=[
             BrowserPageActionDescriptor(
                 tag="a",
-                text="Continue",
-                accessible_name=None,
+                text="Email candidate@example.com",
+                accessible_name="Call 517-555-0123",
                 href="https://jobs.example.com/next?session=secret-session",
                 selector="#continue",
                 disabled=False,
@@ -167,11 +174,13 @@ def test_bundle_writer_persists_correlated_hashed_sanitized_artifacts(tmp_path: 
     assert posting_query["email"] == ["[REDACTED]"]
 
     manifest_text = (root / "run-123/manifest.json").read_text()
+    browser_snapshot_text = (root / "run-123/browser-snapshot.json").read_text()
     bundle_text = "\n".join(
         path.read_text(errors="ignore")
         for path in (root / "run-123").glob("*.json")
     )
     assert "candidate@example.com" not in bundle_text
+    assert "517-555-0123" not in browser_snapshot_text
     assert "private candidate answer" not in bundle_text.casefold()
     assert "never-persist-this" not in bundle_text
     assert "topsecret123" not in manifest_text
