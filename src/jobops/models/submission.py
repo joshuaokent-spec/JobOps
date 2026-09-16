@@ -10,6 +10,7 @@ _SHA256_PATTERN = r"^[0-9a-f]{64}$"
 
 
 class SubmissionReadinessBlocker(StrEnum):
+    MISSING_AUDIT_CONTEXT = "missing_audit_context"
     UNRESOLVED_REQUIRED_FIELDS = "unresolved_required_fields"
     AMBIGUOUS_MAPPINGS = "ambiguous_mappings"
     BLOCKED_VERIFICATION = "blocked_verification"
@@ -43,6 +44,9 @@ class PreparedSubmissionState(BaseModel):
     vendor: BrowserAuditVendor
     prepared_payload_sha256: str = Field(pattern=_SHA256_PATTERN)
     audit_run_id: str | None = Field(default=None, max_length=255)
+    audit_created_at: datetime | None = None
+    browser_session_id: str | None = Field(default=None, min_length=1, max_length=255)
+    document_url_sha256: str | None = Field(default=None, pattern=_SHA256_PATTERN)
     submit_selector: str = Field(min_length=1, max_length=2000)
     submit_control_sha256: str = Field(pattern=_SHA256_PATTERN)
     required_unresolved: int = Field(default=0, ge=0)
@@ -55,7 +59,6 @@ class PreparedSubmissionState(BaseModel):
     submit_control_enabled: bool = True
     ats_context_matches: bool = True
     browser_state_matches: bool = True
-    audit_created_at: datetime | None = None
 
 
 class SubmissionReadinessResult(BaseModel):
@@ -74,6 +77,11 @@ class SubmitAuthorizationCreate(BaseModel):
     ttl_seconds: int = Field(default=300, ge=30, le=900)
 
 
+class SubmitAuthorizationRevoke(BaseModel):
+    revoked_by: str = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=1, max_length=2000)
+
+
 class SubmitAuthorization(BaseModel):
     authorization_id: str = Field(default_factory=lambda: str(uuid4()))
     application_id: str
@@ -81,9 +89,11 @@ class SubmitAuthorization(BaseModel):
     vendor: BrowserAuditVendor
     state_fingerprint: str = Field(pattern=_SHA256_PATTERN)
     prepared_payload_sha256: str = Field(pattern=_SHA256_PATTERN)
+    audit_run_id: str
+    browser_session_id: str
+    document_url_sha256: str = Field(pattern=_SHA256_PATTERN)
     submit_selector: str
     submit_control_sha256: str = Field(pattern=_SHA256_PATTERN)
-    audit_run_id: str | None = None
     authorized_by: str
     note: str
     status: SubmissionAuthorizationStatus = SubmissionAuthorizationStatus.ACTIVE
@@ -91,6 +101,8 @@ class SubmitAuthorization(BaseModel):
     expires_at: datetime
     consumed_at: datetime | None = None
     revoked_at: datetime | None = None
+    revoked_by: str | None = None
+    revoke_note: str | None = None
     attempt_id: str | None = None
 
 
@@ -122,9 +134,11 @@ class SubmissionAttempt(BaseModel):
     job_id: str
     vendor: BrowserAuditVendor
     state_fingerprint: str = Field(pattern=_SHA256_PATTERN)
+    browser_session_id: str
+    document_url_sha256: str = Field(pattern=_SHA256_PATTERN)
     submit_selector: str
     submit_control_sha256: str = Field(pattern=_SHA256_PATTERN)
-    audit_run_id: str | None = None
+    audit_run_id: str
     status: SubmissionAttemptStatus
     submit_invoked: bool = False
     receipt_metadata: dict[str, str | int | float | bool | None] = Field(default_factory=dict)
