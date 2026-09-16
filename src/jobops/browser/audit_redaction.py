@@ -76,7 +76,9 @@ SCREENSHOT_REDACTION_SCRIPT = r"""
     /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
     /\b\+?\d[\d().\-\s]{6,}\d\b/g,
     /\b\d{3}-\d{2}-\d{4}\b/g,
-    /\b(?:email|e-mail|phone|mobile|address|street address|work authorization|sponsorship|gender|race|ethnicity|disability|veteran status|consent)\s*:\s*[^\n|]+/gi,
+    /\b(?:email|e-mail|phone|mobile|address|street address)\s*:\s*[^\n|]+/gi,
+    /\b(?:work authorization|sponsorship|gender|race|ethnicity)\s*:\s*[^\n|]+/gi,
+    /\b(?:disability|veteran status|consent)\s*:\s*[^\n|]+/gi,
   ];
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
