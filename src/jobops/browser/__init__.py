@@ -1,6 +1,10 @@
 from jobops.browser.assisted_field_classifier import AssistedSemanticFieldClassifier
 from jobops.browser.audit import BrowserAuditBundleWriter
-from jobops.browser.audit_redaction import sanitize_page_snapshot, sanitize_url
+from jobops.browser.audit_redaction import (
+    sanitize_page_snapshot,
+    sanitize_text,
+    sanitize_url,
+)
 from jobops.browser.audit_store import (
     BrowserAuditArtifactStore,
     LocalBrowserAuditArtifactStore,
@@ -37,5 +41,6 @@ __all__ = [
     "WorkdayBrowserPrototype",
     "WorkdayDetectionError",
     "sanitize_page_snapshot",
+    "sanitize_text",
     "sanitize_url",
 ]
