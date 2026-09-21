@@ -223,6 +223,8 @@ class LiveApplicationPreparer:
         approved_answers: Mapping[str, str],
         file_paths: Mapping[str, str],
     ) -> tuple[object, ApplicationFieldValueSource] | None:
+        if mapping.field.kind in {BrowserFieldKind.HIDDEN, BrowserFieldKind.BUTTON}:
+            return None
         if mapping.ambiguous or mapping.semantic is ApplicationFieldSemantic.UNKNOWN:
             return None
 
@@ -265,6 +267,8 @@ class LiveApplicationPreparer:
     def _missing_resolution_blocker(
         mapping: SemanticFieldMapping,
     ) -> ApplicationPreparationBlock | None:
+        if mapping.field.kind in {BrowserFieldKind.HIDDEN, BrowserFieldKind.BUTTON}:
+            return None
         if mapping.ambiguous:
             return ApplicationPreparationBlock(
                 code=ApplicationPreparationBlocker.AMBIGUOUS_FIELD,
