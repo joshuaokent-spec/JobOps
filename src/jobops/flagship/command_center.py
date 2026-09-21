@@ -1,6 +1,7 @@
 from jobops.db.approval_repository import ApprovalRepository
 from jobops.db.flagship_repository import FlagshipReadinessRepository
 from jobops.db.repositories import JobRepository
+from jobops.flagship.tracking import FlagshipTrackingService
 from jobops.models.approval import ApprovalStatus
 from jobops.models.command_center import (
     CommandCenterActions,
@@ -11,7 +12,6 @@ from jobops.models.command_center import (
 )
 from jobops.models.flagship_run import FlagshipReadiness
 from jobops.models.search_profile import SearchProfile
-from jobops.flagship.tracking import FlagshipTrackingService
 
 
 class CommandCenterService:
