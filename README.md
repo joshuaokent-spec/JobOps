@@ -49,12 +49,14 @@ Search-profile preview returns ranked eligible jobs plus stable rejection-code s
 
 See `docs/flagship-search-profiles.md` for the hard-constraint contract. F2 adds resilient multi-provider discovery through Jobicy plus optional Adzuna, normalizes all returned jobs through the canonical pipeline, reapplies the saved hard constraints authoritatively, and persists only eligible deduplicated jobs with provider/rejection diagnostics. See `docs/flagship-discovery.md` for the discovery contract.
 
+F3 adds `POST /v1/search-profiles/{profile_id}/run`, which composes discovery, store-wide hard constraints, deterministic ranking, explainable resume-family selection, verified evidence retrieval, and readiness packaging in one call. See `docs/flagship-run.md` for the orchestration contract.
+
 ### Flagship roadmap
 
 - F1 persistent search profile + hard constraints — complete;
 - F2 multi-provider internet job discovery — complete;
-- F3 end-to-end discover/filter/rank/prepare orchestration — next;
-- F4 exception/review inbox and readiness summary;
+- F3 end-to-end discover/filter/rank/prepare orchestration — complete;
+- F4 exception/review inbox and readiness summary — next;
 - F5 supported ATS application execution orchestration;
 - F6 command-center API/dashboard;
 - F7 scheduled/daily runs and tracking summaries;
