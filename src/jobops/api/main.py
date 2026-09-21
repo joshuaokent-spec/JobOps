@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from jobops.api.approvals import router as approvals_router
+from jobops.api.command_center import router as command_center_router
 from jobops.api.feedback import router as feedback_router
 from jobops.api.jobs import router as jobs_router
 from jobops.api.search_profiles import router as search_profiles_router
@@ -15,6 +16,7 @@ app = FastAPI(
 )
 app.include_router(jobs_router)
 app.include_router(search_profiles_router)
+app.include_router(command_center_router)
 app.include_router(approvals_router)
 app.include_router(feedback_router)
 app.include_router(submissions_router)
