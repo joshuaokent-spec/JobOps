@@ -15,6 +15,8 @@ class JobRepository(Protocol):
 
     def get(self, job_id: str) -> JobPosting | None: ...
 
+    def get_by_dedupe_key(self, dedupe_key: str) -> JobPosting | None: ...
+
     def list(self, *, limit: int = 100, offset: int = 0) -> Sequence[JobPosting]: ...
 
     def search(
@@ -56,6 +58,19 @@ class SqlAlchemyJobRepository:
 
     def get(self, job_id: str) -> JobPosting | None:
         record = self.session.get(JobRecord, job_id)
+        return None if record is None else self._to_domain(record)
+
+    def get_by_dedupe_key(self, dedupe_key: str) -> JobPosting | None:
+        statement = (
+            select(JobRecord)
+            .where(
+                JobRecord.dedupe_key == dedupe_key,
+                JobRecord.active.is_(True),
+            )
+            .order_by(JobRecord.created_at.asc(), JobRecord.job_id)
+            .limit(1)
+        )
+        record = self.session.scalar(statement)
         return None if record is None else self._to_domain(record)
 
     def list(self, *, limit: int = 100, offset: int = 0) -> Sequence[JobPosting]:
