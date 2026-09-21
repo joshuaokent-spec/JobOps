@@ -69,6 +69,7 @@ class CommandCenterView(BaseModel):
     metrics: CommandCenterRunMetrics | None = None
     ready_jobs: list[CommandCenterJob] = Field(default_factory=list)
     review_required_jobs: list[CommandCenterJob] = Field(default_factory=list)
+    pending_approval_count: int = Field(default=0, ge=0)
     pending_approvals: list[CommandCenterApproval] = Field(default_factory=list)
     missing_job_ids: list[str] = Field(default_factory=list)
     actions: CommandCenterActions
