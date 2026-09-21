@@ -52,7 +52,7 @@ The flagship product is the priority: give JobOps a candidate/resume evidence ba
 - [x] F3 — End-to-end flagship run orchestrator
 - [x] F4 — Exception/review inbox + readiness summary
 - [x] F5 — Supported ATS application execution orchestration
-- [ ] F6 — Command-center API/dashboard
+- [x] F6 — Command-center API/dashboard
 - [ ] F7 — Scheduled/daily flagship runs + tracking summary
 - [ ] F8 — Real candidate/resume onboarding + v1 demo/release
 
