@@ -22,6 +22,8 @@ token.json
 # Private candidate/application data
 data/private/
 data/production/
+data/training/
+datasets/private/
 candidate.yaml
 resumes/private/
 cover_letters/private/
