@@ -8,7 +8,11 @@ from sqlalchemy.pool import StaticPool
 from jobops.api.dependencies import get_session
 from jobops.api.main import app
 from jobops.db.base import Base
-from jobops.db.models import (\n    ApprovalRecord,\n    FlagshipPreparedJobRecord,\n    FlagshipRunRecord,\n)
+from jobops.db.models import (
+    ApprovalRecord,
+    FlagshipPreparedJobRecord,
+    FlagshipRunRecord,
+)
 from jobops.db.repositories import SqlAlchemyJobRepository
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
 from jobops.models.application_question import HandlingRoute, QuestionCategory, ReviewBand
