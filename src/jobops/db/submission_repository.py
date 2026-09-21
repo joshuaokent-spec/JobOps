@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from jobops.db.models import SubmissionAttemptRecord, SubmitAuthorizationRecord
@@ -111,11 +112,19 @@ class SqlAlchemySubmissionRepository:
         )
         return None if record is None else self._attempt_to_domain(record)
 
+    def get_blocking_attempt(self, application_id: str) -> SubmissionAttempt | None:
+        record = self.session.scalar(
+            select(SubmissionAttemptRecord).where(
+                SubmissionAttemptRecord.execution_lock_key == application_id
+            )
+        )
+        return None if record is None else self._attempt_to_domain(record)
+
     def get_attempt(self, attempt_id: str) -> SubmissionAttempt | None:
         record = self.session.get(SubmissionAttemptRecord, attempt_id)
         return None if record is None else self._attempt_to_domain(record)
 
-    def create_attempt(self, attempt: SubmissionAttempt) -> SubmissionAttempt:
+    def create_attempt(self, attempt: SubmissionAttempt) -> SubmissionAttempt | None:
         record = SubmissionAttemptRecord(
             attempt_id=attempt.attempt_id,
             authorization_id=attempt.authorization_id,
@@ -135,15 +144,26 @@ class SqlAlchemySubmissionRepository:
             error_detail=attempt.error_detail,
             started_at=attempt.started_at,
             completed_at=attempt.completed_at,
+            execution_lock_key=attempt.application_id,
             successful_submission_key=(
                 attempt.application_id
                 if attempt.status is SubmissionAttemptStatus.SUCCEEDED
                 else None
             ),
         )
-        self.session.add(record)
-        self.session.flush()
+        try:
+            with self.session.begin_nested():
+                self.session.add(record)
+                self.session.flush()
+        except IntegrityError:
+            return None
         return self._attempt_to_domain(record)
+
+    def persist_execution_claim(self) -> None:
+        self.session.commit()
+
+    def persist_execution_result(self) -> None:
+        self.session.commit()
 
     def finalize_attempt(
         self,
@@ -173,6 +193,11 @@ class SqlAlchemySubmissionRepository:
             if outcome.status is SubmissionAttemptStatus.SUCCEEDED
             else None
         )
+        if (
+            outcome.status is SubmissionAttemptStatus.FAILED
+            and not outcome.submit_invoked
+        ):
+            record.execution_lock_key = None
         self.session.flush()
         return self._attempt_to_domain(record)
 
