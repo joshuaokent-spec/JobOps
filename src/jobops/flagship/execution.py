@@ -1,5 +1,3 @@
-import hashlib
-import json
 from collections.abc import Mapping
 
 from playwright.sync_api import Page
@@ -21,6 +19,10 @@ from jobops.models.browser_audit import BrowserAuditManifest, BrowserAuditVendor
 from jobops.models.candidate import CandidateProfile
 from jobops.models.flagship_run import FlagshipReadiness
 from jobops.models.submission import PreparedSubmissionState
+from jobops.submissions.playwright_executor import (
+    document_url_sha256,
+    submit_control_sha256,
+)
 from jobops.submissions.service import SubmissionReadinessEvaluator
 
 
@@ -182,12 +184,34 @@ class FlagshipApplicationExecutionService:
 
         submit_locator = page.locator(preparation.submit_selector)
         submit_count = submit_locator.count()
-        submit_enabled = submit_count == 1 and submit_locator.is_enabled()
-        submit_control_sha256 = self._submit_control_sha256(
+        if submit_count != 1:
+            blocked_preparation = preparation.model_copy(
+                update={
+                    "status": ApplicationPreparationStatus.BLOCKED,
+                    "blockers": [
+                        *preparation.blockers,
+                        ApplicationPreparationBlock(
+                            code=ApplicationPreparationBlocker.SUBMIT_CONTROL_NOT_UNIQUE,
+                            reason=(
+                                "Submit control changed after preparation and no longer "
+                                "resolves to exactly one live element."
+                            ),
+                        ),
+                    ],
+                    "prepared_payload_sha256": None,
+                }
+            )
+            return FlagshipApplicationExecutionResult(
+                run_id=summary.run_id,
+                preparation=blocked_preparation,
+            )
+
+        submit_enabled = submit_locator.is_enabled() and submit_locator.is_visible()
+        sealed_submit_control_sha256 = submit_control_sha256(
             page,
             preparation.submit_selector,
         )
-        document_url_sha256 = hashlib.sha256(page.url.encode("utf-8")).hexdigest()
+        sealed_document_url_sha256 = document_url_sha256(page.url)
 
         state = PreparedSubmissionState(
             application_id=application_id,
@@ -205,9 +229,9 @@ class FlagshipApplicationExecutionService:
                 else None
             ),
             browser_session_id=browser_session_id,
-            document_url_sha256=document_url_sha256,
+            document_url_sha256=sealed_document_url_sha256,
             submit_selector=preparation.submit_selector,
-            submit_control_sha256=submit_control_sha256,
+            submit_control_sha256=sealed_submit_control_sha256,
             pending_review=0,
             submit_control_count=submit_count,
             submit_control_enabled=submit_enabled,
@@ -224,34 +248,6 @@ class FlagshipApplicationExecutionService:
             prepared_state=state,
             readiness=readiness,
         )
-
-    @staticmethod
-    def _submit_control_sha256(page: Page, selector: str) -> str:
-        locator = page.locator(selector)
-        if locator.count() != 1:
-            payload = {"selector": selector, "count": locator.count()}
-        else:
-            payload = locator.evaluate(
-                """el => ({
-                    selector: null,
-                    tag: el.tagName.toLowerCase(),
-                    id: el.id || null,
-                    name: el.getAttribute("name"),
-                    type: el.getAttribute("type"),
-                    disabled: Boolean(el.disabled || el.getAttribute("aria-disabled") === "true"),
-                    text: (
-                        el.innerText || el.textContent || el.value || ""
-                    ).replace(/\s+/g, " ").trim()
-                })"""
-            )
-            payload["selector"] = selector
-        encoded = json.dumps(
-            payload,
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        ).encode("utf-8")
-        return hashlib.sha256(encoded).hexdigest()
 
     @staticmethod
     def _blocked(
