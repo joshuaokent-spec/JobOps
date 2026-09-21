@@ -100,7 +100,11 @@ Unknown work mode is not interpreted optimistically.
 Requested role phrases are hard title constraints. Role tokens must be represented in the normalized title, with basic aliases such as:
 
 - `AI` -> `artificial intelligence`;
-- `ML` -> `machine learning`.
+- `ML` -> `machine learning`;
+- `BI` -> `business intelligence`;
+- `UX` -> `user experience`;
+- `UI` -> `user interface`;
+- compact web terms such as `frontend`, `fullstack`, and `backend` -> their split title forms.
 
 Broader semantic role matching may be added later, but a probabilistic model must not silently widen a hard user constraint without an explicit profile policy.
 
@@ -172,3 +176,8 @@ Later Flagship slices use the same profile to:
 8. submit only through the existing one-shot submission authorization gate.
 
 Provider-side search filters are optimizations. The persisted SearchProfile remains the authoritative constraint contract.
+
+
+## Per-run Command Center filters
+
+A broad saved profile can be narrowed for one hunt without changing the saved profile. The onboarded Flagship endpoint and Command Center support transient overrides for role focus, work mode, salary floor, and minimum fit score. This is useful when one candidate profile legitimately spans several career lanes, such as data/analytics, AI/ML, software/web development, and UX/product analysis.
