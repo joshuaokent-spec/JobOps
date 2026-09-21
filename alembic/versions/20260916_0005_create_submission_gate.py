@@ -114,6 +114,7 @@ def upgrade() -> None:
         sa.Column("error_detail", sa.Text(), nullable=True),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("execution_lock_key", sa.String(length=255), nullable=True),
         sa.Column("successful_submission_key", sa.String(length=255), nullable=True),
         sa.ForeignKeyConstraint(
             ["authorization_id"],
@@ -123,6 +124,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["job_id"], ["jobs.job_id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("attempt_id"),
         sa.UniqueConstraint("authorization_id"),
+        sa.UniqueConstraint("execution_lock_key"),
         sa.UniqueConstraint("successful_submission_key"),
     )
     op.create_index(
