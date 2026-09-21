@@ -15,9 +15,11 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **Browser safety by construction:** browser inspection, preparation, audit capture, and final submission remain distinct trust boundaries.
 - **Privacy by minimization:** browser audit artifacts preserve the evidence needed to explain a decision without becoming a candidate-answer or credential archive.
 
-## Current milestone: M4 — Learning System
+## Current milestone: Flagship v1 — Working Job Search + Application Product
 
-M1 Job Intelligence, M2 Application Intelligence, and M3 Browser Automation are complete. M3 now includes a guarded Playwright browser abstraction, semantic form understanding, Greenhouse and Lever preparation adapters, a stateful Workday workflow prototype, privacy-safe browser audit bundles, and an explicit one-shot final-submit authorization gate. Real headless Chromium is exercised in CI across the browser safety and execution boundaries.
+M1 Job Intelligence, M2 Application Intelligence, and M3 Browser Automation are complete. The project is now refocused on the Flagship product: a user supplies a verified candidate/resume evidence base plus explicit search criteria, and JobOps discovers matching jobs, enforces hard constraints, ranks the survivors, prepares applications, surfaces only review-required exceptions, submits through supported ATS paths behind the existing one-shot authorization gate, and tracks outcomes.
+
+M3 already provides the guarded Playwright/browser foundation, semantic field understanding, Greenhouse and Lever adapters, stateful Workday modeling, privacy-safe audit bundles, and explicit final-submit authorization needed by the Flagship.
 
 JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
 
@@ -32,6 +34,33 @@ M3 is deliberately incremental:
 - **M3.7 — Explicit final-submit gate:** deterministic readiness checks, short-lived one-shot human authorization, state/session/document/control fingerprint binding, durable pre-click authorization consumption, an application-wide execution lock for concurrency/crash safety, a narrowly scoped Playwright final-submit executor, success-probe confirmation, safe receipts, and indeterminate timeout handling.
 
 M3 is complete as an engineering milestone. Final-submit execution is deliberately not exposed as a stateless HTTP click endpoint: the executor requires the live browser page/session that was bound into the reviewed state. CI submits only controlled synthetic fixtures, never real employer applications.
+
+## Flagship v1 capabilities
+
+### F1 — Persistent search profiles and hard constraints
+
+JobOps now stores reusable candidate-owned search profiles and applies them as deterministic eligibility rules **before** fit ranking.
+
+A profile can express requested role titles, required/excluded keywords, allowed work modes, locations, employment types, salary floor/currency policy, excluded companies, allowed sources, and an optional minimum fit score.
+
+The default salary behavior is strict: a request such as "remote Data Engineer roles paying at least $65k/year" rejects hybrid/onsite/unknown work modes, rejects salary ranges whose verified lower bound is below $65k, and rejects unknown compensation unless the profile explicitly allows unknown salary.
+
+Search-profile preview returns ranked eligible jobs plus stable rejection-code summaries so the user can see why jobs were excluded.
+
+See `docs/flagship-search-profiles.md` for the hard-constraint contract.
+
+### Flagship roadmap
+
+- F1 persistent search profile + hard constraints — complete;
+- F2 multi-provider internet job discovery — next;
+- F3 end-to-end discover/filter/rank/prepare orchestration;
+- F4 exception/review inbox and readiness summary;
+- F5 supported ATS application execution orchestration;
+- F6 command-center API/dashboard;
+- F7 scheduled/daily runs and tracking summaries;
+- F8 real candidate/resume onboarding and v1 demo/release.
+
+Advanced M4 learning work is now treated as **Labs/Expansion**. M4.1 feedback events and M4.2 leakage-resistant datasets remain complete and useful; later learned models can improve the Flagship without blocking a working v1.
 
 ## M4 capabilities implemented so far
 

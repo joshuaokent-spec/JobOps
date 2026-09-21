@@ -48,6 +48,48 @@ class JobRecord(Base):
     )
 
 
+class SearchProfileRecord(Base):
+    __tablename__ = "search_profiles"
+
+    profile_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    role_queries: Mapped[list[str]] = mapped_column(JSON, default=list)
+    required_keywords: Mapped[list[str]] = mapped_column(JSON, default=list)
+    excluded_keywords: Mapped[list[str]] = mapped_column(JSON, default=list)
+    allowed_work_modes: Mapped[list[str]] = mapped_column(JSON, default=list)
+    locations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    employment_types: Mapped[list[str]] = mapped_column(JSON, default=list)
+    minimum_salary: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    salary_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    salary_floor_policy: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="minimum_offered",
+    )
+    unknown_compensation_policy: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="exclude",
+    )
+    excluded_companies: Mapped[list[str]] = mapped_column(JSON, default=list)
+    allowed_sources: Mapped[list[str]] = mapped_column(JSON, default=list)
+    minimum_fit_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
 class ApprovalRecord(Base):
     __tablename__ = "approval_items"
 
