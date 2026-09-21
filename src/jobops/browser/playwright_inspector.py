@@ -180,6 +180,15 @@ class PlaywrightBrowserInspector:
     def __init__(self, config: BrowserSessionConfig | None = None) -> None:
         self.config = config or BrowserSessionConfig()
 
+    def snapshot_live_page_documents(
+        self,
+        page: Page,
+        *,
+        blocked_requests: int = 0,
+    ) -> list[BrowserPageSnapshot]:
+        """Snapshot an already-owned live Page without navigating or mutating it."""
+        return self._snapshots(page, blocked_requests=blocked_requests)
+
     def inspect_url(self, url: str) -> BrowserPageSnapshot:
         return self.inspect_url_documents(url)[0]
 
