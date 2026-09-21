@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     llm_max_tokens: int | None = Field(default=768, gt=0)
     llm_timeout_seconds: float = Field(default=60.0, gt=0.0)
 
+    discovery_timeout_seconds: float = Field(default=30.0, gt=0.0)
+    jobicy_enabled: bool = True
+    adzuna_app_id: str | None = None
+    adzuna_app_key: str | None = None
+    adzuna_country: str = Field(default="us", min_length=2, max_length=2)
+
     model_config = SettingsConfigDict(
         env_prefix="JOBOPS_",
         env_file=".env",

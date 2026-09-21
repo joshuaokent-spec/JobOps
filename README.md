@@ -47,13 +47,13 @@ The default salary behavior is strict: a request such as "remote Data Engineer r
 
 Search-profile preview returns ranked eligible jobs plus stable rejection-code summaries so the user can see why jobs were excluded.
 
-See `docs/flagship-search-profiles.md` for the hard-constraint contract.
+See `docs/flagship-search-profiles.md` for the hard-constraint contract. F2 adds resilient multi-provider discovery through Jobicy plus optional Adzuna, normalizes all returned jobs through the canonical pipeline, reapplies the saved hard constraints authoritatively, and persists only eligible deduplicated jobs with provider/rejection diagnostics. See `docs/flagship-discovery.md` for the discovery contract.
 
 ### Flagship roadmap
 
 - F1 persistent search profile + hard constraints — complete;
-- F2 multi-provider internet job discovery — next;
-- F3 end-to-end discover/filter/rank/prepare orchestration;
+- F2 multi-provider internet job discovery — complete;
+- F3 end-to-end discover/filter/rank/prepare orchestration — next;
 - F4 exception/review inbox and readiness summary;
 - F5 supported ATS application execution orchestration;
 - F6 command-center API/dashboard;

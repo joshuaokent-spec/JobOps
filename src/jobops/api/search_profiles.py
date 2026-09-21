@@ -6,10 +6,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from jobops.api.dependencies import get_session
+from jobops.config import get_settings
 from jobops.db import SqlAlchemyJobRepository
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
+from jobops.discovery.base import DiscoveryProvider
+from jobops.discovery.factory import build_discovery_providers
+from jobops.discovery.runner import DiscoveryService
 from jobops.matching import BaselineJobScorer
 from jobops.matching.hard_constraints import HardConstraintMatcher
+from jobops.models.discovery import (
+    DiscoveryProviderName,
+    DiscoveryRunRequest,
+    DiscoveryRunResult,
+)
 from jobops.models.query import JobSearchFilters
 from jobops.models.search_profile import (
     SearchProfile,
@@ -23,6 +32,10 @@ from jobops.models.search_profile import (
 )
 
 router = APIRouter(prefix="/v1/search-profiles", tags=["search-profiles"])
+
+
+def get_discovery_providers() -> dict[DiscoveryProviderName, DiscoveryProvider]:
+    return build_discovery_providers(get_settings())
 
 
 @router.post("", response_model=SearchProfile, status_code=status.HTTP_201_CREATED)
@@ -193,3 +206,31 @@ def preview_search_profile(
         rejected_sample=rejected,
         rejection_summary=dict(sorted(rejection_counts.items())),
     )
+
+
+
+@router.post("/{profile_id}/discover", response_model=DiscoveryRunResult)
+async def discover_for_search_profile(
+    profile_id: str,
+    request: DiscoveryRunRequest,
+    session: Annotated[Session, Depends(get_session)],
+    providers: Annotated[
+        dict[DiscoveryProviderName, DiscoveryProvider],
+        Depends(get_discovery_providers),
+    ],
+) -> DiscoveryRunResult:
+    profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="search profile not found")
+    if not profile.active:
+        raise HTTPException(status_code=409, detail="search profile is inactive")
+
+    settings = get_settings()
+    service = DiscoveryService(
+        SqlAlchemyJobRepository(session),
+        providers,
+        timeout_seconds=settings.discovery_timeout_seconds,
+    )
+    result = await service.run(profile, request)
+    session.commit()
+    return result
