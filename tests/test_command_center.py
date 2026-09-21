@@ -62,6 +62,7 @@ def test_command_center_handles_profile_with_no_run() -> None:
     assert payload["metrics"] is None
     assert payload["ready_jobs"] == []
     assert payload["review_required_jobs"] == []
+    assert payload["pending_approval_count"] == 0
     assert payload["pending_approvals"] == []
     assert payload["actions"]["run"] == "/v1/search-profiles/profile-1/run"
     app.dependency_overrides.clear()
@@ -179,6 +180,7 @@ def test_command_center_joins_latest_jobs_and_minimizes_approval_content() -> No
     assert payload["ready_jobs"][0]["job_id"] == "job-ready"
     assert payload["ready_jobs"][0]["apply_url"].endswith("/apply")
     assert payload["review_required_jobs"][0]["job_id"] == "job-review"
+    assert payload["pending_approval_count"] == 1
     assert payload["pending_approvals"][0]["approval_id"] == "approval-1"
     serialized = response.text
     assert "PRIVATE PROPOSED ANSWER" not in serialized
