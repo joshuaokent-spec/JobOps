@@ -4,7 +4,9 @@ from collections.abc import Mapping
 
 from playwright.sync_api import Page
 
+from jobops.browser.audit import BrowserAuditBundleWriter
 from jobops.browser.live_preparer import LiveApplicationPreparer
+from jobops.browser.playwright_inspector import PlaywrightBrowserInspector
 from jobops.db.approval_repository import ApprovalRepository
 from jobops.db.flagship_repository import FlagshipReadinessRepository
 from jobops.models.application_execution import (
@@ -31,10 +33,14 @@ class FlagshipApplicationExecutionService:
         approval_repository: ApprovalRepository,
         *,
         readiness_evaluator: SubmissionReadinessEvaluator | None = None,
+        audit_writer: BrowserAuditBundleWriter | None = None,
+        inspector: PlaywrightBrowserInspector | None = None,
     ) -> None:
         self.readiness_repository = readiness_repository
         self.approval_repository = approval_repository
         self.readiness_evaluator = readiness_evaluator or SubmissionReadinessEvaluator()
+        self.audit_writer = audit_writer
+        self.inspector = inspector or PlaywrightBrowserInspector()
 
     def prepare_live(
         self,
@@ -129,9 +135,26 @@ class FlagshipApplicationExecutionService:
                 preparation=preparation,
             )
 
+        resolved_audit_manifest = audit_manifest
+        if resolved_audit_manifest is None and self.audit_writer is not None:
+            capture = self.inspector.capture_live_page(page)
+            resolved_audit_manifest = self.audit_writer.write(
+                capture,
+                source_url=page.url,
+                vendor=vendor,
+                semantic_payload=preparation,
+                ats_context_payload={
+                    "profile_id": profile_id,
+                    "run_id": summary.run_id,
+                    "application_id": application_id,
+                    "job_id": job_id,
+                    "vendor": vendor.value,
+                },
+            )
+
         if (
-            audit_manifest is not None
-            and audit_manifest.vendor is not vendor
+            resolved_audit_manifest is not None
+            and resolved_audit_manifest.vendor is not vendor
         ):
             preparation = preparation.model_copy(
                 update={
@@ -171,9 +194,15 @@ class FlagshipApplicationExecutionService:
             job_id=job_id,
             vendor=vendor,
             prepared_payload_sha256=preparation.prepared_payload_sha256,
-            audit_run_id=audit_manifest.run_id if audit_manifest is not None else None,
+            audit_run_id=(
+                resolved_audit_manifest.run_id
+                if resolved_audit_manifest is not None
+                else None
+            ),
             audit_created_at=(
-                audit_manifest.created_at if audit_manifest is not None else None
+                resolved_audit_manifest.created_at
+                if resolved_audit_manifest is not None
+                else None
             ),
             browser_session_id=browser_session_id,
             document_url_sha256=document_url_sha256,
@@ -183,7 +212,8 @@ class FlagshipApplicationExecutionService:
             submit_control_count=submit_count,
             submit_control_enabled=submit_enabled,
             ats_context_matches=(
-                audit_manifest is None or audit_manifest.vendor is vendor
+                resolved_audit_manifest is None
+                or resolved_audit_manifest.vendor is vendor
             ),
             browser_state_matches=True,
         )
