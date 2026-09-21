@@ -98,7 +98,14 @@ const statusEl = document.getElementById("status");
 function money(job) {
   if (job.salary_min == null && job.salary_max == null) return "Salary not listed";
   const c = job.salary_currency || "USD";
-  const fmt = value => value == null ? "?" : new Intl.NumberFormat("en-US", {style:"currency", currency:c, maximumFractionDigits:0}).format(value);
+  const fmt = value => {
+    if (value == null) return "?";
+    try {
+      return new Intl.NumberFormat("en-US", {style:"currency", currency:c, maximumFractionDigits:0}).format(value);
+    } catch {
+      return `${c} ${Number(value).toLocaleString("en-US")}`;
+    }
+  };
   return job.salary_min === job.salary_max ? fmt(job.salary_min) : `${fmt(job.salary_min)} – ${fmt(job.salary_max)}`;
 }
 function text(tag, value, cls) {
@@ -126,7 +133,7 @@ function jobCard(job) {
     card.appendChild(ul);
   }
   const url = job.apply_url || job.source_url;
-  if (url) {
+  if (url && /^https?:\/\//i.test(url)) {
     const link = document.createElement("a");
     link.href = url;
     link.target = "_blank";
