@@ -128,6 +128,7 @@ class SearchProfileUpdate(BaseModel):
 
 class SearchConstraintResult(BaseModel):
     eligible: bool
+    violation_codes: list[str] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list)
 
 
