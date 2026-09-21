@@ -353,7 +353,7 @@ pytest
 uvicorn jobops.api.main:app --reload
 ```
 
-Then open `http://127.0.0.1:8000/command-center` for the Flagship dashboard or `http://127.0.0.1:8000/docs` for the API.
+Then open `http://127.0.0.1:8000/command-center` for the Flagship dashboard or `http://127.0.0.1:8000/docs` for the API.\n\nFor unattended daily searches, configure `jobops-flagship-daily --input-dir data/private/flagship-runs` with Windows Task Scheduler or cron. See `docs/flagship-daily.md`.
 
 Initialize or upgrade PostgreSQL with:
 
