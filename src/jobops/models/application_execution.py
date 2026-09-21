@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from jobops.models.browser_audit import BrowserAuditVendor
 from jobops.models.form_mapping import ApplicationFieldSemantic
+from jobops.models.submission import PreparedSubmissionState, SubmissionReadinessResult
 
 
 class ApplicationPreparationStatus(StrEnum):
@@ -15,6 +16,8 @@ class ApplicationPreparationStatus(StrEnum):
 class ApplicationPreparationBlocker(StrEnum):
     JOB_NOT_IN_LATEST_RUN = "job_not_in_latest_run"
     FLAGSHIP_REVIEW_REQUIRED = "flagship_review_required"
+    PENDING_APPROVALS = "pending_approvals"
+    CANDIDATE_MISMATCH = "candidate_mismatch"
     MISSING_VERIFIED_FACT = "missing_verified_fact"
     MISSING_APPROVED_REVIEW = "missing_approved_review"
     AMBIGUOUS_FIELD = "ambiguous_field"
@@ -27,6 +30,7 @@ class ApplicationPreparationBlocker(StrEnum):
     SUBMIT_CONTROL_NOT_UNIQUE = "submit_control_not_unique"
     WORKDAY_STATEFUL_PROGRESSION = "workday_stateful_progression"
     UNSUPPORTED_VENDOR = "unsupported_vendor"
+    AUDIT_CONTEXT_MISMATCH = "audit_context_mismatch"
 
 
 class ApplicationFieldValueSource(StrEnum):
@@ -64,3 +68,10 @@ class ApplicationPreparationResult(BaseModel):
         pattern=r"^[0-9a-f]{64}$",
     )
     submission_allowed: bool = False
+
+
+class FlagshipApplicationExecutionResult(BaseModel):
+    run_id: str | None = None
+    preparation: ApplicationPreparationResult
+    prepared_state: PreparedSubmissionState | None = None
+    readiness: SubmissionReadinessResult | None = None
