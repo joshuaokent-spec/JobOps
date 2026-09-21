@@ -1,3 +1,5 @@
+import httpx
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -48,10 +50,6 @@ def _profile() -> SearchProfile:
 
 async def _unused_client_handler(request):
     raise AssertionError("fake providers should not use HTTP")
-
-
-import httpx
-import pytest
 
 
 @pytest.mark.asyncio
@@ -129,8 +127,9 @@ async def test_discovery_fanout_prefers_existing_canonical_job_and_survives_prov
         assert result.persisted == 1
         assert result.duplicates == 1
         assert len(result.persisted_job_ids) == 1
-        assert repo.get_by_dedupe_key(direct.dedupe_key).source == "greenhouse"
-        assert repo.count.__self__ is repo
+        canonical = repo.get_by_dedupe_key(direct.dedupe_key)
+        assert canonical is not None
+        assert canonical.source == "greenhouse"
 
         failed = next(
             item
