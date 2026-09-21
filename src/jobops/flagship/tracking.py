@@ -26,8 +26,6 @@ class FlagshipTrackingService:
 
         latest_ids = set(latest_by_id)
         previous_ids = set(previous_by_id)
-        shared_ids = latest_ids & previous_ids
-
         new_job_ids = sorted(latest_ids - previous_ids)
         no_longer_prepared_job_ids = sorted(previous_ids - latest_ids)
 
