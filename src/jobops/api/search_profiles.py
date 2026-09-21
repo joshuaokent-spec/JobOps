@@ -238,10 +238,6 @@ async def discover_for_search_profile(
         timeout_seconds=settings.discovery_timeout_seconds,
     )
     result = await service.run(profile, request)
-    SqlAlchemyFlagshipReadinessRepository(session).save(
-        candidate_id=profile.candidate_id,
-        result=result,
-    )
     session.commit()
     return result
 
@@ -314,5 +310,9 @@ async def run_flagship_for_search_profile(
     except FlagshipRunError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    SqlAlchemyFlagshipReadinessRepository(session).save(
+        candidate_id=profile.candidate_id,
+        result=result,
+    )
     session.commit()
     return result
