@@ -84,7 +84,13 @@ class SubmissionRepository(Protocol):
 
     def get_successful_attempt(self, application_id: str) -> SubmissionAttempt | None: ...
 
-    def create_attempt(self, attempt: SubmissionAttempt) -> SubmissionAttempt: ...
+    def get_blocking_attempt(self, application_id: str) -> SubmissionAttempt | None: ...
+
+    def create_attempt(self, attempt: SubmissionAttempt) -> SubmissionAttempt | None: ...
+
+    def persist_execution_claim(self) -> None: ...
+
+    def persist_execution_result(self) -> None: ...
 
     def finalize_attempt(
         self,
@@ -193,10 +199,7 @@ class SubmissionGate:
         result = self.readiness.evaluate(request.state, now=created_at)
         if not result.ready:
             raise SubmissionNotReadyError(result)
-        if self.repository.get_successful_attempt(request.state.application_id) is not None:
-            raise DuplicateSubmissionError(
-                f"application already has a successful submission: {request.state.application_id}"
-            )
+        self._assert_no_blocking_attempt(request.state.application_id)
 
         assert request.state.audit_run_id is not None
         assert request.state.browser_session_id is not None
@@ -262,10 +265,7 @@ class SubmissionGate:
                 f"submit authorization not found: {request.authorization_id}"
             )
         self._validate_authorization(authorization, request.state, now=started_at)
-        if self.repository.get_successful_attempt(request.state.application_id) is not None:
-            raise DuplicateSubmissionError(
-                f"application already has a successful submission: {request.state.application_id}"
-            )
+        self._assert_no_blocking_attempt(request.state.application_id)
 
         attempt_id = str(uuid4())
         claimed = self.repository.claim_authorization(
@@ -297,6 +297,11 @@ class SubmissionGate:
                 started_at=started_at,
             )
         )
+        if attempt is None:
+            raise DuplicateSubmissionError(
+                "another submission attempt acquired the application execution lock"
+            )
+        self.repository.persist_execution_claim()
 
         try:
             outcome = _sanitize_outcome(executor.execute(claimed, request.state))
@@ -319,7 +324,21 @@ class SubmissionGate:
         )
         if finalized is None:
             raise SubmissionGateError(f"submission attempt disappeared: {attempt.attempt_id}")
+        self.repository.persist_execution_result()
         return finalized
+
+    def _assert_no_blocking_attempt(self, application_id: str) -> None:
+        blocking = self.repository.get_blocking_attempt(application_id)
+        if blocking is None:
+            return
+        if blocking.status is SubmissionAttemptStatus.SUCCEEDED:
+            raise DuplicateSubmissionError(
+                f"application already has a successful submission: {application_id}"
+            )
+        raise DuplicateSubmissionError(
+            "application already has an executing or indeterminate submission attempt: "
+            f"{application_id}"
+        )
 
     def _validate_authorization(
         self,
