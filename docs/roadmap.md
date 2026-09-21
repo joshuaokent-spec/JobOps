@@ -1,6 +1,6 @@
 # Roadmap
 
-## M0 — Foundation
+## M0 — Foundation — complete
 
 - [x] Package structure
 - [x] Typed candidate/job models
@@ -11,7 +11,7 @@
 - [x] CI and tests
 - [x] PostgreSQL persistence
 
-## M1 — Job Intelligence
+## M1 — Job Intelligence — complete
 
 - [x] Greenhouse ingestion adapter
 - [x] Lever ingestion adapter
@@ -43,13 +43,28 @@
 - [x] Screenshot/audit artifacts
 - [x] Explicit submit gate
 
-## M4 — Learning System
+## Flagship v1 — active
+
+The flagship product is the priority: give JobOps a candidate/resume evidence base and explicit search criteria, let it discover matching jobs broadly, prepare applications, surface only exceptions, submit through supported ATS paths with explicit authorization, and track results.
+
+- [x] F1 — Persistent search profiles + hard-constraint engine
+- [ ] F2 — Multi-provider internet job discovery
+- [ ] F3 — End-to-end flagship run orchestrator
+- [ ] F4 — Exception/review inbox + readiness summary
+- [ ] F5 — Supported ATS application execution orchestration
+- [ ] F6 — Command-center API/dashboard
+- [ ] F7 — Scheduled/daily flagship runs + tracking summary
+- [ ] F8 — Real candidate/resume onboarding + v1 demo/release
+
+## Labs / Expansion — M4 Learning System
+
+These features improve or extend the flagship but do not block Flagship v1.
 
 - [x] Feedback event schema
-- [x] Training dataset builder
-- [ ] Learned ranking baseline (logistic regression)
+- [x] Leakage-resistant training dataset builder
+- [ ] Explainable logistic ranking baseline — parked/in progress on Labs branch
 - [ ] Gradient-boosted ranking model
-- [ ] Resume-selection model
+- [ ] Learned resume-selection model
 - [ ] Callback/interview prediction
 - [ ] Experiment tracking
 - [ ] Calibration and drift checks
