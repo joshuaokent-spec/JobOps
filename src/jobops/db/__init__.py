@@ -7,6 +7,7 @@ from jobops.db.flagship_repository import (
 )
 from jobops.db.models import (
     ApprovalRecord,
+    CandidateOnboardingRecord,
     FeedbackEventRecord,
     FlagshipPreparedJobRecord,
     FlagshipRunRecord,
@@ -14,6 +15,10 @@ from jobops.db.models import (
     SearchProfileRecord,
     SubmissionAttemptRecord,
     SubmitAuthorizationRecord,
+)
+from jobops.db.onboarding_repository import (
+    CandidateOnboardingRepository,
+    SqlAlchemyCandidateOnboardingRepository,
 )
 from jobops.db.repositories import JobRepository, SqlAlchemyJobRepository
 from jobops.db.search_profile_repository import (
@@ -27,6 +32,8 @@ __all__ = [
     "ApprovalRecord",
     "ApprovalRepository",
     "Base",
+    "CandidateOnboardingRecord",
+    "CandidateOnboardingRepository",
     "FeedbackEventRecord",
     "FeedbackRepository",
     "FlagshipPreparedJobRecord",
@@ -38,6 +45,7 @@ __all__ = [
     "SearchProfileRepository",
     "SubmissionAttemptRecord",
     "SqlAlchemyApprovalRepository",
+    "SqlAlchemyCandidateOnboardingRepository",
     "SqlAlchemyFeedbackRepository",
     "SqlAlchemyFlagshipReadinessRepository",
     "SqlAlchemyJobRepository",

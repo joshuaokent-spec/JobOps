@@ -12,6 +12,7 @@ from jobops.db import (
     SqlAlchemyFlagshipReadinessRepository,
     SqlAlchemyJobRepository,
 )
+from jobops.db.onboarding_repository import SqlAlchemyCandidateOnboardingRepository
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
 from jobops.discovery.base import DiscoveryProvider
 from jobops.discovery.factory import build_discovery_providers
@@ -45,6 +46,35 @@ router = APIRouter(prefix="/v1/search-profiles", tags=["search-profiles"])
 
 def get_discovery_providers() -> dict[DiscoveryProviderName, DiscoveryProvider]:
     return build_discovery_providers(get_settings())
+
+
+async def _execute_flagship_run(
+    *,
+    profile: SearchProfile,
+    request: FlagshipRunRequest,
+    session: Session,
+    providers: dict[DiscoveryProviderName, DiscoveryProvider],
+) -> FlagshipRunResult:
+    settings = get_settings()
+    job_repository = SqlAlchemyJobRepository(session)
+    discovery = DiscoveryService(
+        job_repository,
+        providers,
+        timeout_seconds=settings.discovery_timeout_seconds,
+    )
+    service = FlagshipRunService(job_repository, discovery)
+
+    try:
+        result = await service.run(profile, request)
+    except FlagshipRunError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    SqlAlchemyFlagshipReadinessRepository(session).save(
+        candidate_id=profile.candidate_id,
+        result=result,
+    )
+    session.commit()
+    return result
 
 
 @router.post("", response_model=SearchProfile, status_code=status.HTTP_201_CREATED)
@@ -315,23 +345,41 @@ async def run_flagship_for_search_profile(
     if not profile.active:
         raise HTTPException(status_code=409, detail="search profile is inactive")
 
-    settings = get_settings()
-    job_repository = SqlAlchemyJobRepository(session)
-    discovery = DiscoveryService(
-        job_repository,
-        providers,
-        timeout_seconds=settings.discovery_timeout_seconds,
+    return await _execute_flagship_run(
+        profile=profile,
+        request=request,
+        session=session,
+        providers=providers,
     )
-    service = FlagshipRunService(job_repository, discovery)
 
-    try:
-        result = await service.run(profile, request)
-    except FlagshipRunError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    SqlAlchemyFlagshipReadinessRepository(session).save(
-        candidate_id=profile.candidate_id,
-        result=result,
+@router.post("/{profile_id}/run-onboarded", response_model=FlagshipRunResult)
+async def run_onboarded_flagship_for_search_profile(
+    profile_id: str,
+    session: Annotated[Session, Depends(get_session)],
+    providers: Annotated[
+        dict[DiscoveryProviderName, DiscoveryProvider],
+        Depends(get_discovery_providers),
+    ],
+) -> FlagshipRunResult:
+    profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="search profile not found")
+    if not profile.active:
+        raise HTTPException(status_code=409, detail="search profile is inactive")
+
+    onboarding_repository = SqlAlchemyCandidateOnboardingRepository(session)
+    onboarding = onboarding_repository.get(profile.candidate_id)
+    if onboarding is None:
+        raise HTTPException(status_code=409, detail="candidate onboarding is missing")
+
+    readiness = onboarding_repository.status(profile.candidate_id)
+    if not readiness.ready_to_run:
+        raise HTTPException(status_code=409, detail="candidate onboarding is not ready")
+
+    return await _execute_flagship_run(
+        profile=profile,
+        request=onboarding.build_run_request(),
+        session=session,
+        providers=providers,
     )
-    session.commit()
-    return result

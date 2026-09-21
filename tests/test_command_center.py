@@ -63,6 +63,8 @@ def test_command_center_handles_profile_with_no_run() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["has_run"] is False
+    assert payload["onboarding"]["onboarded"] is False
+    assert payload["onboarding"]["ready_to_run"] is False
     assert payload["metrics"] is None
     assert payload["ready_jobs"] == []
     assert payload["review_required_jobs"] == []
@@ -71,6 +73,9 @@ def test_command_center_handles_profile_with_no_run() -> None:
     assert payload["tracking"] is None
     assert payload["actions"]["run"] == "/v1/search-profiles/profile-1/run"
     assert payload["actions"]["tracking"] == "/v1/search-profiles/profile-1/tracking"
+    assert payload["actions"]["run_onboarded"] == (
+        "/v1/search-profiles/profile-1/run-onboarded"
+    )
     app.dependency_overrides.clear()
 
 
@@ -206,6 +211,8 @@ def test_command_center_dashboard_is_zero_build_html() -> None:
     response = client.get("/command-center")
     assert response.status_code == 200
     assert "JobOps Command Center" in response.text
+    assert "Run Job Hunt" in response.text
+    assert "jobops-onboard" in response.text
     assert "/v1/command-center/" in response.text
     assert "<script>" in response.text
     app.dependency_overrides.clear()

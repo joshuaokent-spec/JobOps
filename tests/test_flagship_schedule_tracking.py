@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from jobops.db.base import Base
 from jobops.db.flagship_repository import SqlAlchemyFlagshipReadinessRepository
 from jobops.db.models import FlagshipPreparedJobRecord, FlagshipRunRecord
+from jobops.db.onboarding_repository import SqlAlchemyCandidateOnboardingRepository
 from jobops.db.repositories import SqlAlchemyJobRepository
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
 from jobops.flagship.schedule import (
@@ -24,6 +25,7 @@ from jobops.models.flagship_schedule import (
     ScheduledProfileRunStatus,
 )
 from jobops.models.job import JobPosting, WorkMode
+from jobops.models.onboarding import CandidateOnboardingPayload
 from jobops.models.search_profile import SearchProfile
 
 
@@ -169,6 +171,67 @@ async def test_daily_runner_isolates_profile_inputs_and_persists_success(tmp_pat
         assert saved is not None
         assert saved.prepared_count == 1
         assert saved.ready_count == 1
+
+
+@pytest.mark.asyncio
+async def test_daily_runner_prefers_persisted_onboarding_over_legacy_file(tmp_path) -> None:
+    factory = _factory()
+    run_input = _run_input()
+    onboarding_payload = CandidateOnboardingPayload.model_validate(
+        {
+            "candidate": run_input["candidate"],
+            "resume_evidence": run_input["resume_evidence"],
+            "run_defaults": {
+                "discovery": {"providers": []},
+                "candidate_pool": 100,
+                "max_jobs": 10,
+                "fallback_family_id": "data-engineer",
+            },
+        }
+    )
+
+    with factory() as session:
+        SqlAlchemySearchProfileRepository(session).save(
+            _profile("profile-onboarded", "Onboarded")
+        )
+        SqlAlchemyCandidateOnboardingRepository(session).save(onboarding_payload)
+        SqlAlchemyJobRepository(session).save(
+            JobPosting(
+                job_id="job-onboarded",
+                company="Data Co",
+                title="Data Engineer",
+                work_mode=WorkMode.REMOTE,
+                salary_min=80000,
+                salary_max=100000,
+                salary_currency="USD",
+                salary_interval="year",
+                required_skills=["Python", "SQL"],
+            )
+        )
+        session.commit()
+
+    (tmp_path / "profile-onboarded.json").write_text(
+        "{this legacy file is deliberately broken",
+        encoding="utf-8",
+    )
+
+    result = await DailyFlagshipRunner(
+        factory,
+        providers={},
+        input_store=PrivateFlagshipRunInputStore(tmp_path),
+    ).run()
+
+    assert result.profiles_succeeded == 1
+    assert result.profiles_failed == 0
+    assert result.profile_results[0].status is ScheduledProfileRunStatus.SUCCEEDED
+
+    with factory() as session:
+        assert (
+            SqlAlchemyFlagshipReadinessRepository(session).count_runs(
+                "profile-onboarded"
+            )
+            == 1
+        )
 
 
 def _add_run(

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jobops"
-version = "0.1.0"
+version = "1.0.0"
 description = "Evidence-grounded, human-in-the-loop job search intelligence platform"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,6 +25,7 @@ jobops-ingest = "jobops.ingestion.cli:main"
 jobops-semantic-dedup = "jobops.normalization.semantic_cli:main"
 jobops-build-dataset = "jobops.learning.cli:main"
 jobops-flagship-daily = "jobops.flagship.schedule_cli:main"
+jobops-onboard = "jobops.onboarding_cli:main"
 
 [project.optional-dependencies]
 dev = [

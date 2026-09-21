@@ -4,6 +4,7 @@ from jobops.api.approvals import router as approvals_router
 from jobops.api.command_center import router as command_center_router
 from jobops.api.feedback import router as feedback_router
 from jobops.api.jobs import router as jobs_router
+from jobops.api.onboarding import router as onboarding_router
 from jobops.api.search_profiles import router as search_profiles_router
 from jobops.api.submissions import router as submissions_router
 from jobops.matching import BaselineJobScorer
@@ -11,11 +12,12 @@ from jobops.models.scoring import ScoreBreakdown, ScoreRequest
 
 app = FastAPI(
     title="JobOps API",
-    version="0.1.0",
+    version="1.0.0",
     description="Evidence-grounded job-search intelligence API",
 )
 app.include_router(jobs_router)
 app.include_router(search_profiles_router)
+app.include_router(onboarding_router)
 app.include_router(command_center_router)
 app.include_router(approvals_router)
 app.include_router(feedback_router)

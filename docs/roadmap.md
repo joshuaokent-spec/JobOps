@@ -43,7 +43,7 @@
 - [x] Screenshot/audit artifacts
 - [x] Explicit submit gate
 
-## Flagship v1 — active
+## Flagship v1 — complete
 
 The flagship product is the priority: give JobOps a candidate/resume evidence base and explicit search criteria, let it discover matching jobs broadly, prepare applications, surface only exceptions, submit through supported ATS paths with explicit authorization, and track results.
 
@@ -54,7 +54,7 @@ The flagship product is the priority: give JobOps a candidate/resume evidence ba
 - [x] F5 — Supported ATS application execution orchestration
 - [x] F6 — Command-center API/dashboard
 - [x] F7 — Scheduled/daily flagship runs + tracking summary
-- [ ] F8 — Real candidate/resume onboarding + v1 demo/release
+- [x] F8 — Real candidate/resume onboarding + v1 demo/release
 
 ## Labs / Expansion — M4 Learning System
 

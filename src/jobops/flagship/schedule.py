@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session, sessionmaker
 
 from jobops.db.flagship_repository import SqlAlchemyFlagshipReadinessRepository
+from jobops.db.onboarding_repository import SqlAlchemyCandidateOnboardingRepository
 from jobops.db.repositories import SqlAlchemyJobRepository
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
 from jobops.discovery.base import DiscoveryProvider
@@ -143,22 +144,6 @@ class DailyFlagshipRunner:
         profile_name: str,
         client: httpx.AsyncClient,
     ) -> ScheduledProfileRunResult:
-        try:
-            request = self.input_store.load(profile_id)
-        except FlagshipRunInputError as exc:
-            status = (
-                ScheduledProfileRunStatus.SKIPPED
-                if exc.code == "missing_input"
-                else ScheduledProfileRunStatus.FAILED
-            )
-            return ScheduledProfileRunResult(
-                profile_id=profile_id,
-                profile_name=profile_name,
-                status=status,
-                error_code=exc.code,
-                error=str(exc),
-            )
-
         session = self.session_factory()
         try:
             profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
@@ -170,6 +155,36 @@ class DailyFlagshipRunner:
                     error_code="profile_inactive",
                     error="search profile is no longer active",
                 )
+
+            onboarding_repository = SqlAlchemyCandidateOnboardingRepository(session)
+            onboarding = onboarding_repository.get(profile.candidate_id)
+            if onboarding is not None:
+                readiness = onboarding_repository.status(profile.candidate_id)
+                if not readiness.ready_to_run:
+                    return ScheduledProfileRunResult(
+                        profile_id=profile_id,
+                        profile_name=profile_name,
+                        status=ScheduledProfileRunStatus.FAILED,
+                        error_code="onboarding_not_ready",
+                        error="candidate onboarding exists but is not ready to run",
+                    )
+                request = onboarding.build_run_request()
+            else:
+                try:
+                    request = self.input_store.load(profile_id)
+                except FlagshipRunInputError as exc:
+                    status = (
+                        ScheduledProfileRunStatus.SKIPPED
+                        if exc.code == "missing_input"
+                        else ScheduledProfileRunStatus.FAILED
+                    )
+                    return ScheduledProfileRunResult(
+                        profile_id=profile_id,
+                        profile_name=profile_name,
+                        status=status,
+                        error_code=exc.code,
+                        error=str(exc),
+                    )
 
             jobs = SqlAlchemyJobRepository(session)
             discovery = DiscoveryService(

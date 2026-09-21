@@ -2,9 +2,11 @@
 
 F7 makes the Flagship job hunt repeatable without storing the candidate/resume payload in schedule metadata.
 
-## Private run inputs
+## Input resolution
 
-The daily runner reads one private `FlagshipRunRequest` file per active search profile from:
+F8 candidate onboarding is now the primary input source. For each active search profile, the daily runner first looks up the candidate's persisted onboarding record and builds the normal `FlagshipRunRequest` from it.
+
+When no onboarding record exists, the F7 legacy fallback reads one private `FlagshipRunRequest` file per search profile from:
 
 ```text
 data/private/flagship-runs/<profile_id>.json
@@ -38,7 +40,7 @@ A minimal shape looks like:
 }
 ```
 
-The real evidence base must contain at least one valid resume family before a run can succeed. F8 will replace this hand-authored private input with first-class candidate/resume onboarding.
+The real evidence base must contain at least one valid resume family before a run can succeed. New setups should use `jobops-onboard`; per-profile run files are retained for backward compatibility.
 
 ## Run once
 

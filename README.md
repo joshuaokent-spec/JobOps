@@ -15,7 +15,7 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **Browser safety by construction:** browser inspection, preparation, audit capture, and final submission remain distinct trust boundaries.
 - **Privacy by minimization:** browser audit artifacts preserve the evidence needed to explain a decision without becoming a candidate-answer or credential archive.
 
-## Current milestone: Flagship v1 — Working Job Search + Application Product
+## Flagship v1 — complete
 
 M1 Job Intelligence, M2 Application Intelligence, and M3 Browser Automation are complete. The project is now refocused on the Flagship product: a user supplies a verified candidate/resume evidence base plus explicit search criteria, and JobOps discovers matching jobs, enforces hard constraints, ranks the survivors, prepares applications, surfaces only review-required exceptions, submits through supported ATS paths behind the existing one-shot authorization gate, and tracks outcomes.
 
@@ -59,10 +59,12 @@ F4 persists a privacy-minimized snapshot after each successful Flagship run and 
 - F2 multi-provider internet job discovery — complete;
 - F3 end-to-end discover/filter/rank/prepare orchestration — complete;
 - F4 exception/review inbox and readiness summary — complete;
-- F5 supported ATS application execution orchestration — next;
-- F6 command-center API/dashboard;
-- F7 scheduled/daily runs and tracking summaries;
-- F8 real candidate/resume onboarding and v1 demo/release.
+- F5 supported ATS application execution orchestration — complete;
+- F6 command-center API/dashboard — complete;
+- F7 scheduled/daily runs and tracking summaries — complete;
+- F8 real candidate/resume onboarding and v1 release workflow — complete.
+
+Flagship v1 is released as JobOps 1.0.0. Real candidate material is imported into local/private persistence with `jobops-onboard`; the command center can then launch an onboarded hunt without resending candidate or resume evidence in the browser request.
 
 Advanced M4 learning work is now treated as **Labs/Expansion**. M4.1 feedback events and M4.2 leakage-resistant datasets remain complete and useful; later learned models can improve the Flagship without blocking a working v1.
 
@@ -353,7 +355,15 @@ pytest
 uvicorn jobops.api.main:app --reload
 ```
 
-Then open `http://127.0.0.1:8000/command-center` for the Flagship dashboard or `http://127.0.0.1:8000/docs` for the API.\n\nFor unattended daily searches, configure `jobops-flagship-daily --input-dir data/private/flagship-runs` with Windows Task Scheduler or cron. See `docs/flagship-daily.md`.
+Import a private onboarding bundle first:
+
+```bash
+jobops-onboard --config data/private/<candidate>/onboarding.yaml
+```
+
+Then open `http://127.0.0.1:8000/command-center` for the Flagship dashboard or `http://127.0.0.1:8000/docs` for the API.
+
+For unattended daily searches, configure `jobops-flagship-daily --input-dir data/private/flagship-runs` with Windows Task Scheduler or cron. Onboarded profiles use the local onboarding record automatically; the input directory remains as a backward-compatible fallback. See `docs/flagship-onboarding.md` and `docs/flagship-daily.md`.
 
 Initialize or upgrade PostgreSQL with:
 
