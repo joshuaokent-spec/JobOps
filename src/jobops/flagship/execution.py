@@ -4,7 +4,6 @@ from collections.abc import Mapping
 
 from playwright.sync_api import Page
 
-from jobops.approvals.service import ApprovalService
 from jobops.browser.live_preparer import LiveApplicationPreparer
 from jobops.db.approval_repository import ApprovalRepository
 from jobops.db.flagship_repository import FlagshipReadinessRepository
