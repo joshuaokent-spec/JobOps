@@ -19,6 +19,7 @@ from jobops.submissions import (
     SubmissionAuthorizationNotFoundError,
     SubmissionGate,
     SubmissionNotReadyError,
+    SubmissionReadinessEvaluator,
 )
 
 router = APIRouter(prefix="/v1/submissions", tags=["submissions"])
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/v1/submissions", tags=["submissions"])
 def evaluate_submission_readiness(
     request: PreparedSubmissionState,
 ) -> SubmissionReadinessResult:
-    return SubmissionGate(_ReadOnlySubmissionRepository()).evaluate(request)
+    return SubmissionReadinessEvaluator().evaluate(request)
 
 
 @router.post(
@@ -101,34 +102,3 @@ def get_submission_attempt(
         raise HTTPException(status_code=404, detail="submission attempt not found")
     return item
 
-
-class _ReadOnlySubmissionRepository:
-    """Readiness evaluation cannot create or consume submission authority."""
-
-    def create_authorization(self, item):
-        raise RuntimeError("readiness evaluation cannot create authorization")
-
-    def get_authorization(self, authorization_id):
-        return None
-
-    def claim_authorization(self, authorization_id, *, attempt_id, consumed_at):
-        return None
-
-    def revoke_authorization(
-        self,
-        authorization_id,
-        *,
-        revoked_at,
-        revoked_by,
-        revoke_note,
-    ):
-        return None
-
-    def get_successful_attempt(self, application_id):
-        return None
-
-    def create_attempt(self, attempt):
-        raise RuntimeError("readiness evaluation cannot create attempt")
-
-    def finalize_attempt(self, attempt_id, *, outcome, completed_at):
-        return None
