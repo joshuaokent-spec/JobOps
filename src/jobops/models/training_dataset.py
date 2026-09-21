@@ -1,11 +1,37 @@
 from datetime import datetime, timedelta
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from jobops.models.candidate import CandidateProfile
 from jobops.models.feedback import FeedbackEventType
 from jobops.models.job import JobPosting
+
+RANKING_FEATURE_NAMES = (
+    "title_fit",
+    "required_skill_fit",
+    "preferred_skill_fit",
+    "experience_fit",
+    "compensation_fit",
+    "work_mode_fit",
+    "baseline_overall_score",
+    "posting_age_days",
+    "source",
+    "work_mode",
+    "salary_min_available",
+    "salary_max_available",
+    "salary_any_available",
+    "resume_family_id",
+    "prior_positive_feedback_count",
+    "prior_negative_feedback_count",
+    "prior_application_count",
+    "prior_recruiter_response_count",
+    "prior_recruiter_screen_count",
+    "prior_interview_count",
+    "prior_rejection_count",
+    "prior_offer_count",
+)
+_RANKING_FEATURE_NAME_SET = frozenset(RANKING_FEATURE_NAMES)
 
 
 class DatasetLabelDisposition(StrEnum):
@@ -88,6 +114,23 @@ class RankingFeatureRow(BaseModel):
     split: DatasetSplit
     feature_event_ids: list[str] = Field(default_factory=list)
     label_event_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("features")
+    @classmethod
+    def _validate_feature_schema(
+        cls,
+        value: dict[str, FeatureValue],
+    ) -> dict[str, FeatureValue]:
+        keys = set(value)
+        unknown = keys - _RANKING_FEATURE_NAME_SET
+        missing = _RANKING_FEATURE_NAME_SET - keys
+        if unknown:
+            names = ", ".join(sorted(unknown))
+            raise ValueError(f"unsupported ranking feature keys: {names}")
+        if missing:
+            names = ", ".join(sorted(missing))
+            raise ValueError(f"missing ranking feature keys: {names}")
+        return value
 
 
 class DatasetDiagnostics(BaseModel):
