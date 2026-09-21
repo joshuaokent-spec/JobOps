@@ -12,6 +12,12 @@ _TOKEN_RE = re.compile(r"[a-z0-9+#.]+")
 _ROLE_ALIASES = {
     "ai": ("artificial", "intelligence"),
     "ml": ("machine", "learning"),
+    "bi": ("business", "intelligence"),
+    "ux": ("user", "experience"),
+    "ui": ("user", "interface"),
+    "frontend": ("front", "end"),
+    "fullstack": ("full", "stack"),
+    "backend": ("back", "end"),
 }
 
 
