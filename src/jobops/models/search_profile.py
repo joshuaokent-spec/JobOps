@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -35,6 +36,8 @@ class SearchProfile(BaseModel):
     allowed_sources: list[str] = Field(default_factory=list)
     minimum_fit_score: float | None = Field(default=None, ge=0.0, le=100.0)
     active: bool = True
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @field_validator(
         "role_queries",
@@ -124,3 +127,10 @@ class SearchProfileUpdate(BaseModel):
 class SearchConstraintResult(BaseModel):
     eligible: bool
     reasons: list[str] = Field(default_factory=list)
+
+
+class SearchProfilePage(BaseModel):
+    total: int = Field(ge=0)
+    limit: int = Field(ge=1)
+    offset: int = Field(ge=0)
+    items: list[SearchProfile]
