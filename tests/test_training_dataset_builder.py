@@ -1,8 +1,8 @@
 import json
 from datetime import UTC, datetime, timedelta
 
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
 
 from jobops.learning.dataset_builder import (
     RankingTrainingDatasetBuilder,
@@ -12,9 +12,9 @@ from jobops.models.candidate import CandidateProfile
 from jobops.models.feedback import FeedbackEvent, FeedbackEventSource, FeedbackEventType
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.training_dataset import (
+    RANKING_FEATURE_NAMES,
     DatasetLabelDisposition,
     DatasetSplit,
-    RANKING_FEATURE_NAMES,
     RankingDecisionPoint,
     RankingFeatureRow,
     TrainingDatasetSpec,
