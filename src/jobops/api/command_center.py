@@ -174,7 +174,7 @@ function render(view) {
     [m.prepared_count, "Prepared"],
     [m.ready_count, "Ready"],
     [m.review_required_count, "Needs review"],
-    [view.pending_approvals.length, "Pending approvals"]
+    [view.pending_approval_count, "Pending approvals"]
   ]) {
     const item = document.createElement("div");
     item.className = "metric";
@@ -184,11 +184,37 @@ function render(view) {
   }
   content.appendChild(metrics);
 
+  if (view.tracking) {
+    const t = view.tracking;
+    const changes = panel(t.has_previous_run ? "Since the previous run" : "First tracked run");
+    const changeGrid = document.createElement("div");
+    changeGrid.className = "grid";
+    for (const [value, label] of [
+      [t.new_job_ids.length, "New matches"],
+      [t.no_longer_prepared_job_ids.length, "Dropped matches"],
+      [t.newly_ready_job_ids.length, "Became ready"],
+      [t.newly_review_required_job_ids.length, "Now need review"],
+      [t.readiness_changed_job_ids.length, "Readiness changes"]
+    ]) {
+      const item = document.createElement("div");
+      item.className = "metric";
+      item.appendChild(text("strong", String(value)));
+      item.appendChild(text("span", label));
+      changeGrid.appendChild(item);
+    }
+    changes.appendChild(changeGrid);
+    if (!t.has_previous_run) {
+      changes.appendChild(text("p", "This is the baseline run; future daily runs will show deltas against it.", "muted"));
+    }
+    content.appendChild(changes);
+  }
+
   const actions = panel("Operator links");
   const actionLinks = [
     ["Profile JSON", view.actions.profile],
     ["Readiness JSON", view.actions.readiness],
     ["Exceptions JSON", view.actions.exceptions],
+    ["Tracking JSON", view.actions.tracking],
     ["Pending approvals", view.actions.approvals + "?status=pending"],
     ["API docs", view.actions.api_docs]
   ];
