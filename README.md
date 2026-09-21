@@ -54,7 +54,28 @@ M4.1 adds:
 - `POST /v1/feedback/events`, `GET /v1/feedback/events`, and `GET /v1/feedback/events/{event_id}`;
 - unit, persistence, API, migration, temporal-order, privacy, and idempotency regression coverage using synthetic data only.
 
-See `docs/feedback-events.md` for the event semantics, temporal ML contract, idempotency rules, and privacy boundary. M4.2 will build leakage-resistant training examples from this stream.
+See `docs/feedback-events.md` for the event semantics, temporal ML contract, idempotency rules, and privacy boundary.
+
+### M4.2 — Leakage-resistant training dataset builder
+
+JobOps can now turn explicit historical decision snapshots plus the immutable event stream into deterministic supervised-ranking rows without leaking future knowledge into features.
+
+M4.2 adds:
+
+- typed dataset specification, label policy, decision-point, feature-row, diagnostics, split, manifest, and build-result contracts;
+- explicit prediction cutoffs and configurable future label windows;
+- feature-event eligibility based on `observed_at <= cutoff`;
+- label eligibility that requires both occurrence and observation after the decision point and observation within the declared horizon;
+- a fixed inspectable ranking feature schema built from the existing baseline scorer plus pre-cutoff historical aggregates;
+- configurable positive/negative event definitions, with employer outcomes excluded from ranking labels by default;
+- explicit ambiguous/unlabeled dispositions instead of silently resolving contradictory feedback;
+- deterministic chronological train/validation splitting with no default random shuffle;
+- a deterministic dataset fingerprint that excludes generation time but includes specification, schema, and canonical rows;
+- JSONL + JSON manifest output and a `jobops-build-dataset` CLI;
+- strict feature-key validation and ignored private training-output paths to keep raw narrative/PII fields out of the public ML dataset surface;
+- synthetic temporal/privacy/reproducibility regression tests.
+
+See `docs/training-datasets.md` for the cutoff rules, label semantics, feature schema, split contract, privacy boundary, and reproducibility design.
 
 ## M1 capabilities
 
@@ -193,8 +214,8 @@ See `docs/browser-audit-artifacts.md` for the privacy, retention, storage, and i
 ### M4 — Learning System — in progress
 
 - immutable feedback/outcome event stream — complete;
-- leakage-resistant training dataset builder — next;
-- learned ranking baseline;
+- leakage-resistant training dataset builder — complete;
+- learned ranking baseline — next;
 - gradient-boosted ranking model;
 - resume-selection model;
 - application-outcome analytics;
