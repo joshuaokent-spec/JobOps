@@ -97,6 +97,7 @@ Supported one-run overrides are:
 
 - `role_queries`;
 - `allowed_work_modes`;
+- `hybrid_location_hubs`, including per-hub radius;
 - `minimum_salary` / `clear_minimum_salary`;
 - `minimum_fit_score` / `clear_minimum_fit_score`.
 
