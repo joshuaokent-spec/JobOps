@@ -14,6 +14,7 @@ from jobops.models.submission import (
     SubmissionReadinessBlocker,
     SubmitAuthorization,
     SubmitAuthorizationCreate,
+    SubmitAuthorizationRevoke,
 )
 from jobops.submissions import (
     DuplicateSubmissionError,
@@ -66,6 +67,8 @@ class MemorySubmissionRepository:
         authorization_id: str,
         *,
         revoked_at: datetime,
+        revoked_by: str,
+        revoke_note: str,
     ) -> SubmitAuthorization | None:
         current = self.authorizations.get(authorization_id)
         if current is None or current.status is not SubmissionAuthorizationStatus.ACTIVE:
@@ -74,6 +77,8 @@ class MemorySubmissionRepository:
             update={
                 "status": SubmissionAuthorizationStatus.REVOKED,
                 "revoked_at": revoked_at,
+                "revoked_by": revoked_by,
+                "revoke_note": revoke_note,
             },
             deep=True,
         )
@@ -152,6 +157,8 @@ def _state(**updates: object) -> PreparedSubmissionState:
         "vendor": BrowserAuditVendor.GREENHOUSE,
         "prepared_payload_sha256": _HASH_A,
         "audit_run_id": "audit-123",
+        "browser_session_id": "browser-session-123",
+        "document_url_sha256": "d" * 64,
         "submit_selector": "#submit-application",
         "submit_control_sha256": _HASH_B,
         "required_unresolved": 0,
@@ -341,7 +348,11 @@ def test_revoked_authorization_cannot_submit() -> None:
     repo = MemorySubmissionRepository()
     gate = SubmissionGate(repo)
     authorization = _authorize(gate)
-    revoked = gate.revoke(authorization.authorization_id, now=_NOW + timedelta(seconds=1))
+    revoked = gate.revoke(
+        authorization.authorization_id,
+        SubmitAuthorizationRevoke(revoked_by="Josh", note="Cancel synthetic submit."),
+        now=_NOW + timedelta(seconds=1),
+    )
     assert revoked.status is SubmissionAuthorizationStatus.REVOKED
 
     with pytest.raises(SubmissionAuthorizationInvalidError, match="revoked"):
