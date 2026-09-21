@@ -17,7 +17,7 @@ from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepositor
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.onboarding import CandidateOnboardingPayload
 from jobops.models.search_profile import SearchProfile
-from jobops.onboarding_cli import load_payload
+from jobops.onboarding_cli import load_payload, load_search_profiles
 
 
 def _client():
@@ -223,6 +223,25 @@ def test_onboarding_cli_loader_accepts_yaml_and_json(tmp_path) -> None:
     yaml_path.write_text(yaml.safe_dump(payload), encoding="utf-8")
     loaded_yaml = load_payload(yaml_path)
     assert loaded_yaml.resume_evidence.candidate_id == "me"
+
+
+def test_onboarding_cli_bundle_loads_owned_search_profiles(tmp_path) -> None:
+    import yaml
+
+    bundle = {
+        "onboarding": _payload_dict(),
+        "search_profiles": [
+            _profile().model_dump(mode="json", exclude_none=True)
+        ],
+    }
+    path = tmp_path / "bundle.yaml"
+    path.write_text(yaml.safe_dump(bundle), encoding="utf-8")
+
+    payload = load_payload(path)
+    profiles = load_search_profiles(path)
+    assert payload.candidate.candidate_id == "me"
+    assert [profile.profile_id for profile in profiles] == ["profile-1"]
+    assert profiles[0].minimum_salary == 65000
 
 
 def test_run_onboarded_uses_persisted_candidate_and_evidence() -> None:
