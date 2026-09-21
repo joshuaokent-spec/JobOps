@@ -12,35 +12,11 @@ from jobops.models.training_dataset import (
     DatasetManifest,
     DatasetSplit,
     RankingDecisionPoint,
+    RANKING_FEATURE_NAMES,
     RankingFeatureRow,
     TrainingDatasetBuildResult,
     TrainingDatasetSpec,
 )
-
-RANKING_FEATURE_NAMES = [
-    "title_fit",
-    "required_skill_fit",
-    "preferred_skill_fit",
-    "experience_fit",
-    "compensation_fit",
-    "work_mode_fit",
-    "baseline_overall_score",
-    "posting_age_days",
-    "source",
-    "work_mode",
-    "salary_min_available",
-    "salary_max_available",
-    "salary_any_available",
-    "resume_family_id",
-    "prior_positive_feedback_count",
-    "prior_negative_feedback_count",
-    "prior_application_count",
-    "prior_recruiter_response_count",
-    "prior_recruiter_screen_count",
-    "prior_interview_count",
-    "prior_rejection_count",
-    "prior_offer_count",
-]
 
 _POSITIVE_HISTORY_EVENTS = {
     FeedbackEventType.JOB_SAVED,
