@@ -2,6 +2,8 @@ from datetime import UTC, datetime
 
 from playwright.sync_api import sync_playwright
 
+from jobops.browser.audit import BrowserAuditBundleWriter
+from jobops.browser.audit_store import LocalBrowserAuditArtifactStore
 from jobops.flagship import FlagshipApplicationExecutionService
 from jobops.models.application_execution import (
     ApplicationPreparationBlocker,
@@ -9,14 +11,18 @@ from jobops.models.application_execution import (
 )
 from jobops.models.application_question import HandlingRoute, QuestionCategory, ReviewBand
 from jobops.models.approval import ApprovalItem, ApprovalReason, ApprovalStatus
-from jobops.models.browser import BrowserEngine
-from jobops.models.browser_audit import BrowserAuditManifest, BrowserAuditVendor
+from jobops.models.browser_audit import BrowserAuditVendor
 from jobops.models.candidate import CandidateFact, CandidateProfile
 from jobops.models.flagship_readiness import (
     FlagshipPreparedSnapshot,
     FlagshipReadinessSummary,
 )
 from jobops.models.flagship_run import FlagshipReadiness
+from jobops.models.submission import (
+    SubmissionAuthorizationStatus,
+    SubmitAuthorizationCreate,
+)
+from jobops.submissions import SubmissionGate
 
 
 _GREENHOUSE = """
@@ -54,6 +60,18 @@ class _ReadinessRepository:
         if self.summary is None or self.summary.profile_id != profile_id:
             return None
         return self.summary
+
+
+class _AuthorizationRepository:
+    def __init__(self) -> None:
+        self.authorizations = {}
+
+    def create_authorization(self, item):
+        self.authorizations[item.authorization_id] = item
+        return item
+
+    def get_blocking_attempt(self, application_id: str):
+        return None
 
 
 class _ApprovalRepository:
@@ -216,19 +234,13 @@ def test_flagship_execution_seals_ready_greenhouse_state_without_submitting(
     resume = tmp_path / "resume.pdf"
     resume.write_bytes(b"%PDF fixture")
 
+    audit_root = tmp_path / "audit"
     service = FlagshipApplicationExecutionService(
         _ReadinessRepository(_summary()),
         _ApprovalRepository([_approved_sponsorship()]),
-    )
-    audit = BrowserAuditManifest(
-        run_id="audit-1",
-        created_at=datetime.now(UTC),
-        source_url="https://boards.greenhouse.io/acme/jobs/123",
-        vendor=BrowserAuditVendor.GREENHOUSE,
-        browser_engine=BrowserEngine.CHROMIUM,
-        redaction_applied=True,
-        live_writes_allowed=False,
-        submission_allowed=False,
+        audit_writer=BrowserAuditBundleWriter(
+            LocalBrowserAuditArtifactStore(audit_root)
+        ),
     )
 
     with sync_playwright() as playwright:
@@ -244,18 +256,30 @@ def test_flagship_execution_seals_ready_greenhouse_state_without_submitting(
                 candidate=_candidate(),
                 page=page,
                 browser_session_id="session-1",
-                audit_manifest=audit,
                 file_paths={"selected_resume": str(resume)},
             )
 
             assert result.preparation.status is ApplicationPreparationStatus.PREPARED
             assert result.prepared_state is not None
-            assert result.prepared_state.audit_run_id == "audit-1"
+            assert result.prepared_state.audit_run_id is not None
             assert result.prepared_state.browser_session_id == "session-1"
             assert result.prepared_state.submit_selector == "#submit-app"
             assert result.readiness is not None
             assert result.readiness.ready is True
             assert result.readiness.blockers == []
+            assert (audit_root / result.prepared_state.audit_run_id / "manifest.json").is_file()
+
+            gate = SubmissionGate(_AuthorizationRepository())
+            authorization = gate.authorize(
+                SubmitAuthorizationCreate(
+                    state=result.prepared_state,
+                    authorized_by="candidate",
+                    note="Fresh explicit authorization for controlled fixture.",
+                ),
+                now=datetime.now(UTC),
+            )
+            assert authorization.status is SubmissionAuthorizationStatus.ACTIVE
+            assert authorization.state_fingerprint == result.readiness.state_fingerprint
             assert page.evaluate("window.__submitted || 0") == 0
         finally:
             browser.close()
