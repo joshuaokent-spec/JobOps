@@ -1,9 +1,15 @@
 from jobops.db.approval_repository import ApprovalRepository, SqlAlchemyApprovalRepository
 from jobops.db.base import Base
 from jobops.db.feedback_repository import FeedbackRepository, SqlAlchemyFeedbackRepository
+from jobops.db.flagship_repository import (
+    FlagshipReadinessRepository,
+    SqlAlchemyFlagshipReadinessRepository,
+)
 from jobops.db.models import (
     ApprovalRecord,
     FeedbackEventRecord,
+    FlagshipPreparedJobRecord,
+    FlagshipRunRecord,
     JobRecord,
     SearchProfileRecord,
     SubmissionAttemptRecord,
@@ -23,6 +29,9 @@ __all__ = [
     "Base",
     "FeedbackEventRecord",
     "FeedbackRepository",
+    "FlagshipPreparedJobRecord",
+    "FlagshipReadinessRepository",
+    "FlagshipRunRecord",
     "JobRecord",
     "JobRepository",
     "SearchProfileRecord",
@@ -30,6 +39,7 @@ __all__ = [
     "SubmissionAttemptRecord",
     "SqlAlchemyApprovalRepository",
     "SqlAlchemyFeedbackRepository",
+    "SqlAlchemyFlagshipReadinessRepository",
     "SqlAlchemyJobRepository",
     "SqlAlchemySearchProfileRepository",
     "SqlAlchemySubmissionRepository",
