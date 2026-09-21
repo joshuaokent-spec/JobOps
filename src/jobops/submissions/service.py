@@ -275,7 +275,8 @@ class SubmissionGate:
         )
         if claimed is None or claimed.status is not SubmissionAuthorizationStatus.CONSUMED:
             raise SubmissionAuthorizationInvalidError(
-                "submit authorization could not be consumed; it may have expired, been revoked, or been used"
+                "submit authorization could not be consumed; it may have expired, "
+                "been revoked, or been used"
             )
 
         attempt = self.repository.create_attempt(
