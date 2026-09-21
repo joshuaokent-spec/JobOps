@@ -16,9 +16,13 @@ from jobops.flagship.schedule import (
     FlagshipRunInputError,
     PrivateFlagshipRunInputStore,
 )
+from jobops.flagship.schedule_cli import _exit_code
 from jobops.flagship.tracking import FlagshipTrackingService
 from jobops.models.flagship_run import FlagshipReadiness
-from jobops.models.flagship_schedule import ScheduledProfileRunStatus
+from jobops.models.flagship_schedule import (
+    ScheduledFlagshipBatchResult,
+    ScheduledProfileRunStatus,
+)
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.search_profile import SearchProfile
 
@@ -211,6 +215,24 @@ def _add_run(
                 evidence_ids=["pipeline-project"],
             )
         )
+
+
+def test_daily_runner_exit_codes_distinguish_success_skip_and_failure() -> None:
+    now = datetime.now(UTC)
+
+    def batch(*, skipped: int = 0, failed: int = 0) -> ScheduledFlagshipBatchResult:
+        return ScheduledFlagshipBatchResult(
+            started_at=now,
+            completed_at=now,
+            profiles_total=1,
+            profiles_succeeded=1 if not skipped and not failed else 0,
+            profiles_skipped=skipped,
+            profiles_failed=failed,
+        )
+
+    assert _exit_code(batch()) == 0
+    assert _exit_code(batch(skipped=1)) == 2
+    assert _exit_code(batch(failed=1)) == 1
 
 
 def test_tracking_compares_latest_run_to_previous_deterministically() -> None:
