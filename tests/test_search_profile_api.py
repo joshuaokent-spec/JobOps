@@ -156,3 +156,42 @@ def test_search_profile_update_and_delete() -> None:
     assert deleted.status_code == 204
     assert client.get(f"/v1/search-profiles/{profile_id}").status_code == 404
     app.dependency_overrides.clear()
+
+
+def test_search_profile_round_trips_hybrid_location_hubs() -> None:
+    client = _client()
+    created = client.post(
+        "/v1/search-profiles",
+        json={
+            "candidate_id": "me",
+            "name": "Remote + hybrid hubs",
+            "allowed_work_modes": ["remote", "hybrid"],
+            "hybrid_location_hubs": [
+                {
+                    "label": "Seattle, WA",
+                    "latitude": 47.6062,
+                    "longitude": -122.3321,
+                    "radius_miles": 50,
+                },
+                {
+                    "label": "Lansing, MI",
+                    "latitude": 42.7325,
+                    "longitude": -84.5555,
+                    "radius_miles": 50,
+                },
+            ],
+        },
+    )
+    assert created.status_code == 201
+    profile_id = created.json()["profile_id"]
+
+    fetched = client.get(f"/v1/search-profiles/{profile_id}")
+    assert fetched.status_code == 200
+    payload = fetched.json()
+    assert payload["allowed_work_modes"] == ["remote", "hybrid"]
+    assert [hub["label"] for hub in payload["hybrid_location_hubs"]] == [
+        "Seattle, WA",
+        "Lansing, MI",
+    ]
+    assert payload["hybrid_location_hubs"][0]["radius_miles"] == 50
+    app.dependency_overrides.clear()
