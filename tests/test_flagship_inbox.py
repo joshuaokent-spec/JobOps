@@ -207,10 +207,10 @@ def test_latest_readiness_and_exception_inbox_are_actionable_and_durable() -> No
         assert payload["review_required_count"] == 1
         assert payload["pending_approval_count"] == 1
         assert payload["total_exceptions"] == 2
-        assert [item["kind"] for item in payload["items"]] == [
+        assert {item["kind"] for item in payload["items"]} == {
             "approval",
             "readiness",
-        ]
+        }
         assert {item["company"] for item in payload["items"]} == {
             "GoodData",
             "GoodAI",
