@@ -98,6 +98,7 @@ class RankingTrainingDatasetBuilder:
                 for event in candidate_events
                 if event.job_id == point.job.job_id
                 and _label_event_matches_application(point, event)
+                and _as_utc(event.occurred_at) > cutoff
                 and _as_utc(event.observed_at) > cutoff
             ]
             window_events = [
