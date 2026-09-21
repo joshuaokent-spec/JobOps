@@ -7,11 +7,11 @@ from pathlib import Path
 from jobops.matching import BaselineJobScorer
 from jobops.models.feedback import FeedbackEvent, FeedbackEventType
 from jobops.models.training_dataset import (
+    RANKING_FEATURE_NAMES,
     DatasetDiagnostics,
     DatasetLabelDisposition,
     DatasetManifest,
     DatasetSplit,
-    RANKING_FEATURE_NAMES,
     RankingDecisionPoint,
     RankingFeatureRow,
     TrainingDatasetBuildResult,
