@@ -24,6 +24,7 @@ dependencies = [
 jobops-ingest = "jobops.ingestion.cli:main"
 jobops-semantic-dedup = "jobops.normalization.semantic_cli:main"
 jobops-build-dataset = "jobops.learning.cli:main"
+jobops-flagship-daily = "jobops.flagship.schedule_cli:main"
 
 [project.optional-dependencies]
 dev = [

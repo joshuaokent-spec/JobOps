@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from jobops.models.application_question import ReviewBand
 from jobops.models.flagship_run import FlagshipReadiness
+from jobops.models.flagship_tracking import FlagshipTrackingSummary
 from jobops.models.job import WorkMode
 from jobops.models.search_profile import SearchProfile
 
@@ -59,6 +60,7 @@ class CommandCenterActions(BaseModel):
     run: str
     readiness: str
     exceptions: str
+    tracking: str
     approvals: str
     api_docs: str = "/docs"
 
@@ -67,6 +69,7 @@ class CommandCenterView(BaseModel):
     profile: SearchProfile
     has_run: bool
     metrics: CommandCenterRunMetrics | None = None
+    tracking: FlagshipTrackingSummary | None = None
     ready_jobs: list[CommandCenterJob] = Field(default_factory=list)
     review_required_jobs: list[CommandCenterJob] = Field(default_factory=list)
     pending_approval_count: int = Field(default=0, ge=0)

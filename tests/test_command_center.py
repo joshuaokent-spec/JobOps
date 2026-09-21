@@ -68,7 +68,9 @@ def test_command_center_handles_profile_with_no_run() -> None:
     assert payload["review_required_jobs"] == []
     assert payload["pending_approval_count"] == 0
     assert payload["pending_approvals"] == []
+    assert payload["tracking"] is None
     assert payload["actions"]["run"] == "/v1/search-profiles/profile-1/run"
+    assert payload["actions"]["tracking"] == "/v1/search-profiles/profile-1/tracking"
     app.dependency_overrides.clear()
 
 
@@ -181,11 +183,18 @@ def test_command_center_joins_latest_jobs_and_minimizes_approval_content() -> No
     assert payload["has_run"] is True
     assert payload["metrics"]["ready_count"] == 1
     assert payload["metrics"]["rejection_summary"]["salary_floor"] == 3
+    assert payload["tracking"]["latest_run_id"] == "run-1"
+    assert payload["tracking"]["has_previous_run"] is False
+    assert payload["tracking"]["new_job_ids"] == ["job-ready", "job-review"]
     assert payload["ready_jobs"][0]["job_id"] == "job-ready"
     assert payload["ready_jobs"][0]["apply_url"].endswith("/apply")
     assert payload["review_required_jobs"][0]["job_id"] == "job-review"
     assert payload["pending_approval_count"] == 1
     assert payload["pending_approvals"][0]["approval_id"] == "approval-1"
+    tracking_response = client.get("/v1/search-profiles/profile-1/tracking")
+    assert tracking_response.status_code == 200
+    assert tracking_response.json()["latest_run_id"] == "run-1"
+
     serialized = response.text
     assert "PRIVATE PROPOSED ANSWER" not in serialized
     assert "PRIVATE FINAL ANSWER" not in serialized

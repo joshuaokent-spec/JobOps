@@ -1,6 +1,7 @@
 from jobops.db.approval_repository import ApprovalRepository
 from jobops.db.flagship_repository import FlagshipReadinessRepository
 from jobops.db.repositories import JobRepository
+from jobops.flagship.tracking import FlagshipTrackingService
 from jobops.models.approval import ApprovalStatus
 from jobops.models.command_center import (
     CommandCenterActions,
@@ -32,9 +33,13 @@ class CommandCenterService:
             run=f"/v1/search-profiles/{profile.profile_id}/run",
             readiness=f"/v1/search-profiles/{profile.profile_id}/readiness",
             exceptions=f"/v1/search-profiles/{profile.profile_id}/exceptions",
+            tracking=f"/v1/search-profiles/{profile.profile_id}/tracking",
             approvals="/v1/approvals",
         )
         summary = self.readiness_repository.latest(profile.profile_id)
+        tracking = FlagshipTrackingService(self.readiness_repository).latest(
+            profile.profile_id
+        )
         if summary is None:
             return CommandCenterView(
                 profile=profile,
@@ -118,6 +123,7 @@ class CommandCenterService:
                 review_required_count=summary.review_required_count,
                 rejection_summary=dict(summary.rejection_summary),
             ),
+            tracking=tracking,
             ready_jobs=ready_jobs,
             review_required_jobs=review_jobs,
             pending_approval_count=len(approvals),
