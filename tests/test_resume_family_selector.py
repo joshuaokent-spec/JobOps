@@ -96,3 +96,53 @@ def test_score_breakdown_is_reproducible() -> None:
     first = selector.select(job)
     second = selector.select(job)
     assert first == second
+
+
+def test_selector_recognizes_web_development_as_software_work() -> None:
+    store = ResumeEvidenceStore(
+        ResumeEvidenceBase(
+            candidate_id="sample",
+            families=[
+                ResumeFamilyDefinition(
+                    family_id="software",
+                    name="Software / Web",
+                    role_families=[RoleFamily.SOFTWARE],
+                ),
+                ResumeFamilyDefinition(
+                    family_id="analytics",
+                    name="Analytics",
+                    role_families=[RoleFamily.ANALYTICS],
+                ),
+            ],
+        )
+    )
+    result = ExplainableResumeFamilySelector(store).select(
+        JobPosting(job_id="web", company="Example", title="Front End Developer")
+    )
+    assert result.chosen_family_id == "software"
+    assert result.candidates[0].features.title_role_fit > 0
+
+
+def test_selector_recognizes_user_experience_analysis_as_analytics_work() -> None:
+    store = ResumeEvidenceStore(
+        ResumeEvidenceBase(
+            candidate_id="sample",
+            families=[
+                ResumeFamilyDefinition(
+                    family_id="software",
+                    name="Software / Web",
+                    role_families=[RoleFamily.SOFTWARE],
+                ),
+                ResumeFamilyDefinition(
+                    family_id="analytics",
+                    name="Analytics / UX",
+                    role_families=[RoleFamily.ANALYTICS],
+                ),
+            ],
+        )
+    )
+    result = ExplainableResumeFamilySelector(store).select(
+        JobPosting(job_id="ux", company="Example", title="User Experience Analyst")
+    )
+    assert result.chosen_family_id == "analytics"
+    assert result.candidates[0].features.title_role_fit > 0
