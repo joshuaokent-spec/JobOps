@@ -1,5 +1,6 @@
 from jobops.db.approval_repository import ApprovalRepository
 from jobops.db.flagship_repository import FlagshipReadinessRepository
+from jobops.db.onboarding_repository import CandidateOnboardingRepository
 from jobops.db.repositories import JobRepository
 from jobops.flagship.tracking import FlagshipTrackingService
 from jobops.models.approval import ApprovalStatus
@@ -22,10 +23,12 @@ class CommandCenterService:
         readiness_repository: FlagshipReadinessRepository,
         job_repository: JobRepository,
         approval_repository: ApprovalRepository,
+        onboarding_repository: CandidateOnboardingRepository,
     ) -> None:
         self.readiness_repository = readiness_repository
         self.job_repository = job_repository
         self.approval_repository = approval_repository
+        self.onboarding_repository = onboarding_repository
 
     def build(self, profile: SearchProfile) -> CommandCenterView:
         actions = CommandCenterActions(
@@ -34,8 +37,11 @@ class CommandCenterService:
             readiness=f"/v1/search-profiles/{profile.profile_id}/readiness",
             exceptions=f"/v1/search-profiles/{profile.profile_id}/exceptions",
             tracking=f"/v1/search-profiles/{profile.profile_id}/tracking",
+            onboarding=f"/v1/candidates/{profile.candidate_id}/onboarding/status",
+            run_onboarded=f"/v1/search-profiles/{profile.profile_id}/run-onboarded",
             approvals="/v1/approvals",
         )
+        onboarding = self.onboarding_repository.status(profile.candidate_id)
         summary = self.readiness_repository.latest(profile.profile_id)
         tracking = FlagshipTrackingService(self.readiness_repository).latest(
             profile.profile_id
@@ -43,6 +49,7 @@ class CommandCenterService:
         if summary is None:
             return CommandCenterView(
                 profile=profile,
+                onboarding=onboarding,
                 has_run=False,
                 actions=actions,
             )
@@ -108,6 +115,7 @@ class CommandCenterService:
 
         return CommandCenterView(
             profile=profile,
+            onboarding=onboarding,
             has_run=True,
             metrics=CommandCenterRunMetrics(
                 run_id=summary.run_id,
