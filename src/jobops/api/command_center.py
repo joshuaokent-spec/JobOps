@@ -156,6 +156,64 @@ function render(view) {
   content.replaceChildren();
   statusEl.textContent = `${view.profile.name} · ${view.profile.active ? "active" : "inactive"}`;
 
+  const onboarding = panel("Candidate onboarding");
+  const o = view.onboarding;
+  const onboardingGrid = document.createElement("div");
+  onboardingGrid.className = "grid";
+  for (const [value, label] of [
+    [o.resume_family_ids.length, "Resume families"],
+    [o.verified_evidence_count, "Verified evidence"],
+    [o.verified_fact_count, "Verified facts"],
+    [o.missing_resume_asset_family_ids.length, "Missing resume files"]
+  ]) {
+    const item = document.createElement("div");
+    item.className = "metric";
+    item.appendChild(text("strong", String(value)));
+    item.appendChild(text("span", label));
+    onboardingGrid.appendChild(item);
+  }
+  onboarding.appendChild(onboardingGrid);
+
+  if (!o.onboarded) {
+    onboarding.appendChild(text("p", "No candidate onboarding record exists yet. Import a private onboarding bundle with jobops-onboard.", "empty"));
+  } else if (!o.ready_to_run) {
+    onboarding.appendChild(text("p", "Onboarding exists but needs at least one resume family and verified evidence before the Flagship can run.", "empty"));
+  } else {
+    const runButton = document.createElement("button");
+    runButton.textContent = "Run Job Hunt";
+    runButton.addEventListener("click", async () => {
+      runButton.disabled = true;
+      runButton.textContent = "Running…";
+      statusEl.textContent = "Running Flagship job hunt…";
+      try {
+        const response = await fetch(view.actions.run_onboarded, {method: "POST"});
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || "Flagship run failed.");
+        }
+        statusEl.textContent = "Flagship run complete.";
+        await loadSelected();
+      } catch (error) {
+        statusEl.textContent = error.message;
+        statusEl.className = "error";
+      } finally {
+        runButton.disabled = false;
+        runButton.textContent = "Run Job Hunt";
+      }
+    });
+    onboarding.appendChild(runButton);
+    onboarding.appendChild(
+      text(
+        "p",
+        o.ready_for_application_execution
+          ? "Onboarding is ready for job hunting and resume-family application execution."
+          : "Job hunting is ready. Add the missing resume-family files before live application preparation.",
+        "muted"
+      )
+    );
+  }
+  content.appendChild(onboarding);
+
   if (!view.has_run) {
     const box = panel("No Flagship run yet");
     box.appendChild(text("p", "This profile is configured, but it does not have a saved Flagship run yet.", "empty"));
@@ -217,6 +275,7 @@ function render(view) {
     ["Readiness JSON", view.actions.readiness],
     ["Exceptions JSON", view.actions.exceptions],
     ["Tracking JSON", view.actions.tracking],
+    ["Onboarding status", view.actions.onboarding],
     ["Pending approvals", view.actions.approvals + "?status=pending"],
     ["API docs", view.actions.api_docs]
   ];
@@ -227,7 +286,7 @@ function render(view) {
     link.style.marginRight = "12px";
     actions.appendChild(link);
   }
-  actions.appendChild(text("p", `Run endpoint: POST ${view.actions.run} (use API docs until F8 stores candidate/resume onboarding data)`, "muted"));
+  actions.appendChild(text("p", `Manual payload endpoint: POST ${view.actions.run} · onboarded endpoint: POST ${view.actions.run_onboarded}`, "muted"));
   content.appendChild(actions);
 
   const ready = panel(`Ready jobs (${view.ready_jobs.length})`);
