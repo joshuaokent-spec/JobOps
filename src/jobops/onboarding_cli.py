@@ -72,7 +72,13 @@ def _run(config_path: str) -> int:
     try:
         payload = load_payload(config_path)
         search_profiles = load_search_profiles(config_path)
-    except (OSError, json.JSONDecodeError, yaml.YAMLError, ValidationError, ValueError) as exc:
+    except (
+        OSError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+        ValidationError,
+        ValueError,
+    ) as exc:
         print(
             json.dumps(
                 {
