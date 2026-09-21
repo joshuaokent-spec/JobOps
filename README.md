@@ -353,7 +353,7 @@ pytest
 uvicorn jobops.api.main:app --reload
 ```
 
-Then open `http://127.0.0.1:8000/docs`.
+Then open `http://127.0.0.1:8000/command-center` for the Flagship dashboard or `http://127.0.0.1:8000/docs` for the API.
 
 Initialize or upgrade PostgreSQL with:
 
