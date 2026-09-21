@@ -101,8 +101,16 @@ class FlagshipRunRecord(Base):
         index=True,
     )
     candidate_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
-    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    completed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
     total_examined: Mapped[int] = mapped_column(Integer, nullable=False)
     total_hard_eligible: Mapped[int] = mapped_column(Integer, nullable=False)
     total_hard_rejected: Mapped[int] = mapped_column(Integer, nullable=False)
