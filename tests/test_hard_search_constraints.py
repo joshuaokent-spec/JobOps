@@ -129,3 +129,21 @@ def test_unannualized_salary_is_rejected_by_default() -> None:
     )
     assert result.eligible is False
     assert result.violation_codes == ["salary_floor"]
+
+
+def test_role_alias_allows_ux_phrase_matching() -> None:
+    profile = _profile(role_queries=["UX Analyst"], minimum_salary=None)
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        _job("ux", title="Senior User Experience Analyst"),
+    )
+    assert result.eligible is True
+
+
+def test_role_alias_allows_frontend_phrase_matching() -> None:
+    profile = _profile(role_queries=["Frontend Developer"], minimum_salary=None)
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        _job("frontend", title="Front End Developer"),
+    )
+    assert result.eligible is True
