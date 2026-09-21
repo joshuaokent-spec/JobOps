@@ -31,8 +31,11 @@ class DiscoveryProviderDiagnostic(BaseModel):
     queries: int = Field(default=0, ge=0)
     fetched: int = Field(default=0, ge=0)
     normalized: int = Field(default=0, ge=0)
+    eligible: int = Field(default=0, ge=0)
+    rejected: int = Field(default=0, ge=0)
     persisted: int = Field(default=0, ge=0)
     duplicates: int = Field(default=0, ge=0)
+    rejection_summary: dict[str, int] = Field(default_factory=dict)
     error: str | None = None
 
 
@@ -46,7 +49,10 @@ class DiscoveryRunResult(BaseModel):
     providers_skipped: int = Field(ge=0)
     fetched: int = Field(ge=0)
     normalized: int = Field(ge=0)
+    eligible: int = Field(ge=0)
+    rejected: int = Field(ge=0)
     persisted: int = Field(ge=0)
     duplicates: int = Field(ge=0)
+    rejection_summary: dict[str, int] = Field(default_factory=dict)
     persisted_job_ids: list[str] = Field(default_factory=list)
     provider_results: list[DiscoveryProviderDiagnostic] = Field(default_factory=list)
