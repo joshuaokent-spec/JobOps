@@ -38,6 +38,7 @@ from jobops.models.search_profile import (
     SearchProfilePreviewRequest,
     SearchProfileRankedJob,
     SearchProfileRejectedJob,
+    SearchProfileRunFilters,
     SearchProfileUpdate,
 )
 
@@ -46,6 +47,34 @@ router = APIRouter(prefix="/v1/search-profiles", tags=["search-profiles"])
 
 def get_discovery_providers() -> dict[DiscoveryProviderName, DiscoveryProvider]:
     return build_discovery_providers(get_settings())
+
+
+def _apply_run_filters(
+    profile: SearchProfile,
+    filters: SearchProfileRunFilters | None,
+) -> SearchProfile:
+    if filters is None:
+        return profile
+
+    data = profile.model_dump(exclude={"created_at", "updated_at"})
+    if filters.role_queries is not None:
+        data["role_queries"] = filters.role_queries
+    if filters.allowed_work_modes is not None:
+        data["allowed_work_modes"] = filters.allowed_work_modes
+    if filters.clear_minimum_salary:
+        data["minimum_salary"] = None
+    elif filters.minimum_salary is not None:
+        data["minimum_salary"] = filters.minimum_salary
+    if filters.clear_minimum_fit_score:
+        data["minimum_fit_score"] = None
+    elif filters.minimum_fit_score is not None:
+        data["minimum_fit_score"] = filters.minimum_fit_score
+
+    return SearchProfile(
+        **data,
+        created_at=profile.created_at,
+        updated_at=profile.updated_at,
+    )
 
 
 async def _execute_flagship_run(
@@ -361,6 +390,7 @@ async def run_onboarded_flagship_for_search_profile(
         dict[DiscoveryProviderName, DiscoveryProvider],
         Depends(get_discovery_providers),
     ],
+    filters: SearchProfileRunFilters | None = None,
 ) -> FlagshipRunResult:
     profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
     if profile is None:
@@ -377,8 +407,9 @@ async def run_onboarded_flagship_for_search_profile(
     if not readiness.ready_to_run:
         raise HTTPException(status_code=409, detail="candidate onboarding is not ready")
 
+    run_profile = _apply_run_filters(profile, filters)
     return await _execute_flagship_run(
-        profile=profile,
+        profile=run_profile,
         request=onboarding.build_run_request(),
         session=session,
         providers=providers,
