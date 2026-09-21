@@ -1,3 +1,4 @@
+import math
 import re
 
 from jobops.models.job import JobPosting, WorkMode
@@ -47,7 +48,11 @@ class HardConstraintMatcher:
                 f"Work mode {job.work_mode.value!r} is outside allowed modes: {modes}.",
             )
 
-        if profile.locations and job.work_mode is not WorkMode.REMOTE:
+        if job.work_mode is WorkMode.HYBRID and profile.hybrid_location_hubs:
+            radius_reason = self._hybrid_radius_rejection_reason(profile, job)
+            if radius_reason is not None:
+                reject("hybrid_radius", radius_reason)
+        elif profile.locations and job.work_mode is not WorkMode.REMOTE:
             location = (job.location or "").casefold()
             if not any(value.casefold() in location for value in profile.locations):
                 reject("location", "Job location does not match the requested locations.")
@@ -108,6 +113,45 @@ class HardConstraintMatcher:
         if not query_tokens or not title_tokens:
             return False
         return query_tokens.issubset(title_tokens)
+
+    @staticmethod
+    def _hybrid_radius_rejection_reason(
+        profile: SearchProfile,
+        job: JobPosting,
+    ) -> str | None:
+        location_key = " ".join((job.location or "").casefold().replace(",", " ").split())
+        for hub in profile.hybrid_location_hubs:
+            hub_key = " ".join(hub.label.casefold().replace(",", " ").split())
+            if hub_key and (hub_key in location_key or location_key in hub_key):
+                return None
+
+        coordinates = _job_coordinates(job)
+        if coordinates is None:
+            return (
+                "Hybrid job location is outside the named hubs or lacks coordinates "
+                "needed to verify the configured radius."
+            )
+
+        latitude, longitude = coordinates
+        distances = [
+            (
+                _distance_miles(
+                    latitude,
+                    longitude,
+                    hub.latitude,
+                    hub.longitude,
+                ),
+                hub,
+            )
+            for hub in profile.hybrid_location_hubs
+        ]
+        nearest_distance, nearest_hub = min(distances, key=lambda item: item[0])
+        if nearest_distance <= nearest_hub.radius_miles:
+            return None
+        return (
+            f"Hybrid job is {nearest_distance:.1f} miles from the nearest hub "
+            f"({nearest_hub.label}), beyond its {nearest_hub.radius_miles:g}-mile radius."
+        )
 
     @staticmethod
     def _salary_rejection_reason(
@@ -187,3 +231,46 @@ def _canonical_role_tokens(value: str) -> set[str]:
         else:
             tokens.extend(alias)
     return set(tokens)
+
+
+def _job_coordinates(job: JobPosting) -> tuple[float, float] | None:
+    candidates: list[object] = [
+        job.source_metadata,
+        job.source_metadata.get("adapter_metadata"),
+        job.source_metadata.get("raw_payload"),
+    ]
+    for value in candidates:
+        if not isinstance(value, dict):
+            continue
+        latitude = _finite_number(value.get("latitude"))
+        longitude = _finite_number(value.get("longitude"))
+        if latitude is None or longitude is None:
+            continue
+        if -90 <= latitude <= 90 and -180 <= longitude <= 180:
+            return latitude, longitude
+    return None
+
+
+def _finite_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    return number if math.isfinite(number) else None
+
+
+def _distance_miles(
+    latitude_a: float,
+    longitude_a: float,
+    latitude_b: float,
+    longitude_b: float,
+) -> float:
+    radius_miles = 3958.7613
+    lat_a = math.radians(latitude_a)
+    lat_b = math.radians(latitude_b)
+    delta_lat = math.radians(latitude_b - latitude_a)
+    delta_lon = math.radians(longitude_b - longitude_a)
+    haversine = (
+        math.sin(delta_lat / 2) ** 2
+        + math.cos(lat_a) * math.cos(lat_b) * math.sin(delta_lon / 2) ** 2
+    )
+    return 2 * radius_miles * math.asin(min(1.0, math.sqrt(haversine)))
