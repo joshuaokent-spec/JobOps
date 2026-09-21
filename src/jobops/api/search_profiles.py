@@ -61,6 +61,8 @@ def _apply_run_filters(
         data["role_queries"] = filters.role_queries
     if filters.allowed_work_modes is not None:
         data["allowed_work_modes"] = filters.allowed_work_modes
+    if filters.hybrid_location_hubs is not None:
+        data["hybrid_location_hubs"] = filters.hybrid_location_hubs
     if filters.clear_minimum_salary:
         data["minimum_salary"] = None
     elif filters.minimum_salary is not None:
