@@ -133,3 +133,44 @@ async def test_adzuna_does_not_promote_predicted_salary_to_verified_salary() -> 
     assert verified.salary_min == 80000
     assert verified.salary_currency == "USD"
     assert verified.salary_interval == "year"
+
+
+@pytest.mark.asyncio
+async def test_adzuna_fans_remote_and_hybrid_queries_across_hubs() -> None:
+    seen: list[tuple[str | None, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.url.params.get("what"), request.url.params.get("where")))
+        return httpx.Response(200, json={"results": []})
+
+    profile = _profile(
+        role_queries=["Data Engineer"],
+        allowed_work_modes=[WorkMode.REMOTE, WorkMode.HYBRID],
+        locations=[],
+        hybrid_location_hubs=[
+            {
+                "label": "Seattle, WA",
+                "latitude": 47.6062,
+                "longitude": -122.3321,
+                "radius_miles": 50,
+            },
+            {
+                "label": "Lansing, MI",
+                "latitude": 42.7325,
+                "longitude": -84.5555,
+                "radius_miles": 50,
+            },
+        ],
+    )
+    provider = AdzunaDiscoveryProvider(
+        app_id="test-app",
+        app_key="test-key",
+        country="us",
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        _, queries = await provider.discover(profile, limit=20, client=client)
+
+    assert queries == 3
+    assert ("Data Engineer remote", None) in seen
+    assert ("Data Engineer hybrid", "Seattle, WA") in seen
+    assert ("Data Engineer hybrid", "Lansing, MI") in seen

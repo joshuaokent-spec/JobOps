@@ -56,8 +56,16 @@ h1 { margin: 0 0 4px; font-size: 24px; }
 header p { margin: 0; color: #98a6bf; }
 main { max-width: 1200px; margin: 0 auto; padding: 24px; }
 .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
-select, button, a.button { border: 1px solid #334363; background: #17223a; color: #eef3ff; border-radius: 8px; padding: 9px 12px; text-decoration: none; }
+select, input, button, a.button { border: 1px solid #334363; background: #17223a; color: #eef3ff; border-radius: 8px; padding: 9px 12px; text-decoration: none; }
 button { cursor: pointer; }
+.hunt-filters { display: grid; grid-template-columns: minmax(260px, 2fr) repeat(3, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; align-items: end; }
+.filter-field { display: grid; gap: 6px; }
+.filter-field label { color: #b8c4d8; font-size: 13px; }
+.filter-field select[multiple] { min-height: 132px; }
+.mode-options { display: flex; gap: 12px; flex-wrap: wrap; min-height: 38px; align-items: center; }
+.mode-options label { display: inline-flex; align-items: center; gap: 6px; color: #e8edf7; }
+.mode-options input[type="checkbox"] { width: auto; padding: 0; }
+@media (max-width: 850px) { .hunt-filters { grid-template-columns: 1fr; } }
 .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 16px 0 24px; }
 .metric, .panel, .job { border: 1px solid #263552; background: #111a2e; border-radius: 10px; }
 .metric { padding: 14px; }
@@ -179,14 +187,171 @@ function render(view) {
   } else if (!o.ready_to_run) {
     onboarding.appendChild(text("p", "Onboarding exists but needs at least one resume family and verified evidence before the Flagship can run.", "empty"));
   } else {
+    const filters = document.createElement("div");
+    filters.className = "hunt-filters";
+
+    const roleField = document.createElement("div");
+    roleField.className = "filter-field";
+    roleField.appendChild(text("label", "Role focus"));
+    const roleSelect = document.createElement("select");
+    roleSelect.multiple = true;
+    roleSelect.size = Math.min(Math.max(view.profile.role_queries.length, 4), 8);
+    roleSelect.title = "Choose one or more saved target roles for this hunt.";
+    for (const role of view.profile.role_queries) {
+      const option = document.createElement("option");
+      option.value = role;
+      option.textContent = role;
+      option.selected = true;
+      roleSelect.appendChild(option);
+    }
+    roleField.appendChild(roleSelect);
+    roleField.appendChild(text("span", "Ctrl/Cmd-click to narrow this run.", "muted"));
+    filters.appendChild(roleField);
+
+    const salaryField = document.createElement("div");
+    salaryField.className = "filter-field";
+    salaryField.appendChild(text("label", "Minimum salary"));
+    const salaryInput = document.createElement("input");
+    salaryInput.type = "number";
+    salaryInput.min = "0";
+    salaryInput.step = "1000";
+    salaryInput.placeholder = "No floor";
+    salaryInput.value = view.profile.minimum_salary == null ? "" : String(view.profile.minimum_salary);
+    salaryField.appendChild(salaryInput);
+    filters.appendChild(salaryField);
+
+    const modeField = document.createElement("div");
+    modeField.className = "filter-field";
+    modeField.appendChild(text("label", "Work mode"));
+    const modeOptions = document.createElement("div");
+    modeOptions.className = "mode-options";
+    const modeChecks = {};
+    for (const [value, label] of [
+      ["remote", "Remote"],
+      ["hybrid", "Hybrid"],
+      ["onsite", "Onsite"]
+    ]) {
+      const wrap = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = value;
+      checkbox.checked = view.profile.allowed_work_modes.includes(value);
+      modeChecks[value] = checkbox;
+      wrap.appendChild(checkbox);
+      wrap.appendChild(document.createTextNode(label));
+      modeOptions.appendChild(wrap);
+    }
+    modeField.appendChild(modeOptions);
+    filters.appendChild(modeField);
+
+    const hubField = document.createElement("div");
+    hubField.className = "filter-field";
+    hubField.appendChild(text("label", "Hybrid location hubs"));
+    const hubSelect = document.createElement("select");
+    hubSelect.multiple = true;
+    hubSelect.size = Math.min(Math.max(view.profile.hybrid_location_hubs.length, 4), 7);
+    view.profile.hybrid_location_hubs.forEach((hub, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = hub.label;
+      option.selected = true;
+      hubSelect.appendChild(option);
+    });
+    hubField.appendChild(hubSelect);
+    hubField.appendChild(text("span", "Remote stays nationwide; these hubs apply only to hybrid roles.", "muted"));
+    filters.appendChild(hubField);
+
+    const radiusField = document.createElement("div");
+    radiusField.className = "filter-field";
+    radiusField.appendChild(text("label", "Hybrid radius (miles)"));
+    const radiusInput = document.createElement("input");
+    radiusInput.type = "number";
+    radiusInput.min = "1";
+    radiusInput.max = "500";
+    radiusInput.step = "5";
+    radiusInput.value = view.profile.hybrid_location_hubs.length
+      ? String(view.profile.hybrid_location_hubs[0].radius_miles)
+      : "50";
+    radiusField.appendChild(radiusInput);
+    filters.appendChild(radiusField);
+
+    const fitField = document.createElement("div");
+    fitField.className = "filter-field";
+    fitField.appendChild(text("label", "Minimum fit score"));
+    const fitInput = document.createElement("input");
+    fitInput.type = "number";
+    fitInput.min = "0";
+    fitInput.max = "100";
+    fitInput.step = "1";
+    fitInput.placeholder = "No minimum";
+    fitInput.value = view.profile.minimum_fit_score == null ? "" : String(view.profile.minimum_fit_score);
+    fitField.appendChild(fitInput);
+    filters.appendChild(fitField);
+
+    onboarding.appendChild(filters);
+
     const runButton = document.createElement("button");
     runButton.textContent = "Run Job Hunt";
     runButton.addEventListener("click", async () => {
+      const selectedRoles = Array.from(roleSelect.selectedOptions).map(option => option.value);
+      if (view.profile.role_queries.length && !selectedRoles.length) {
+        statusEl.textContent = "Select at least one role focus before running the hunt.";
+        statusEl.className = "error";
+        return;
+      }
+
+      const selectedModes = Object.entries(modeChecks)
+        .filter(([, checkbox]) => checkbox.checked)
+        .map(([mode]) => mode);
+      if (!selectedModes.length) {
+        statusEl.textContent = "Select at least one work mode before running the hunt.";
+        statusEl.className = "error";
+        return;
+      }
+
+      const runFilters = {
+        role_queries: selectedRoles,
+        allowed_work_modes: selectedModes
+      };
+
+      if (selectedModes.includes("hybrid")) {
+        const selectedHubs = Array.from(hubSelect.selectedOptions).map(option => {
+          const hub = view.profile.hybrid_location_hubs[Number(option.value)];
+          return {
+            ...hub,
+            radius_miles: Number(radiusInput.value || 50)
+          };
+        });
+        if (view.profile.hybrid_location_hubs.length && !selectedHubs.length) {
+          statusEl.textContent = "Select at least one hybrid location hub.";
+          statusEl.className = "error";
+          return;
+        }
+        runFilters.hybrid_location_hubs = selectedHubs;
+      } else {
+        runFilters.hybrid_location_hubs = [];
+      }
+
+      if (salaryInput.value.trim()) {
+        runFilters.minimum_salary = Number(salaryInput.value);
+      } else {
+        runFilters.clear_minimum_salary = true;
+      }
+      if (fitInput.value.trim()) {
+        runFilters.minimum_fit_score = Number(fitInput.value);
+      } else if (view.profile.minimum_fit_score != null) {
+        runFilters.clear_minimum_fit_score = true;
+      }
       runButton.disabled = true;
       runButton.textContent = "Running…";
-      statusEl.textContent = "Running Flagship job hunt…";
+      statusEl.className = "muted";
+      statusEl.textContent = `Running Flagship hunt across ${selectedRoles.length} role target(s)…`;
       try {
-        const response = await fetch(view.actions.run_onboarded, {method: "POST"});
+        const response = await fetch(view.actions.run_onboarded, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(runFilters)
+        });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));
           throw new Error(detail.detail || "Flagship run failed.");
@@ -206,7 +371,7 @@ function render(view) {
       text(
         "p",
         o.ready_for_application_execution
-          ? "Onboarding is ready for job hunting and resume-family application execution."
+          ? "Onboarding is ready. Filters above apply only to this hunt; the saved profile remains unchanged."
           : "Job hunting is ready. Add the missing resume-family files before live application preparation.",
         "muted"
       )

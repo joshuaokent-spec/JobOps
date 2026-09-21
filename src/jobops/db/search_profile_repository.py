@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from jobops.db.models import SearchProfileRecord
 from jobops.models.job import WorkMode
 from jobops.models.search_profile import (
+    HybridLocationHub,
     SalaryFloorPolicy,
     SearchProfile,
     UnknownCompensationPolicy,
@@ -130,6 +131,9 @@ class SqlAlchemySearchProfileRepository:
             "excluded_keywords": list(profile.excluded_keywords),
             "allowed_work_modes": [mode.value for mode in profile.allowed_work_modes],
             "locations": list(profile.locations),
+            "hybrid_location_hubs": [
+                hub.model_dump(mode="json") for hub in profile.hybrid_location_hubs
+            ],
             "employment_types": list(profile.employment_types),
             "minimum_salary": profile.minimum_salary,
             "salary_currency": profile.salary_currency,
@@ -156,6 +160,10 @@ class SqlAlchemySearchProfileRepository:
                 WorkMode(value) for value in (record.allowed_work_modes or [])
             ],
             locations=list(record.locations or []),
+            hybrid_location_hubs=[
+                HybridLocationHub.model_validate(item)
+                for item in (record.hybrid_location_hubs or [])
+            ],
             employment_types=list(record.employment_types or []),
             minimum_salary=record.minimum_salary,
             salary_currency=record.salary_currency,

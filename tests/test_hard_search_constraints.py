@@ -129,3 +129,118 @@ def test_unannualized_salary_is_rejected_by_default() -> None:
     )
     assert result.eligible is False
     assert result.violation_codes == ["salary_floor"]
+
+
+def test_role_alias_allows_ux_phrase_matching() -> None:
+    profile = _profile(role_queries=["UX Analyst"], minimum_salary=None)
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        _job("ux", title="Senior User Experience Analyst"),
+    )
+    assert result.eligible is True
+
+
+def test_role_alias_allows_frontend_phrase_matching() -> None:
+    profile = _profile(role_queries=["Frontend Developer"], minimum_salary=None)
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        _job("frontend", title="Front End Developer"),
+    )
+    assert result.eligible is True
+
+
+def test_remote_job_ignores_hybrid_hub_radius() -> None:
+    profile = _profile(
+        allowed_work_modes=[WorkMode.REMOTE, WorkMode.HYBRID],
+        hybrid_location_hubs=[
+            {
+                "label": "Lansing, MI",
+                "latitude": 42.7325,
+                "longitude": -84.5555,
+                "radius_miles": 50,
+            }
+        ],
+        minimum_salary=None,
+    )
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        JobPosting(
+            job_id="remote-anywhere",
+            company="Remote Co",
+            title="Data Engineer",
+            location="San Diego, CA",
+            work_mode=WorkMode.REMOTE,
+        ),
+    )
+    assert result.eligible is True
+
+
+def test_hybrid_job_within_radius_is_eligible() -> None:
+    profile = _profile(
+        allowed_work_modes=[WorkMode.REMOTE, WorkMode.HYBRID],
+        hybrid_location_hubs=[
+            {
+                "label": "Seattle, WA",
+                "latitude": 47.6062,
+                "longitude": -122.3321,
+                "radius_miles": 50,
+            }
+        ],
+        minimum_salary=None,
+    )
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        JobPosting(
+            job_id="hybrid-near-seattle",
+            company="Hybrid Co",
+            title="Data Engineer",
+            location="Bellevue, WA",
+            work_mode=WorkMode.HYBRID,
+            source_metadata={
+                "adapter_metadata": {
+                    "latitude": 47.6101,
+                    "longitude": -122.2015,
+                }
+            },
+        ),
+    )
+    assert result.eligible is True
+
+
+def test_hybrid_job_outside_all_radii_is_rejected() -> None:
+    profile = _profile(
+        allowed_work_modes=[WorkMode.REMOTE, WorkMode.HYBRID],
+        hybrid_location_hubs=[
+            {
+                "label": "Seattle, WA",
+                "latitude": 47.6062,
+                "longitude": -122.3321,
+                "radius_miles": 50,
+            },
+            {
+                "label": "Portland, OR",
+                "latitude": 45.5152,
+                "longitude": -122.6784,
+                "radius_miles": 50,
+            },
+        ],
+        minimum_salary=None,
+    )
+    result = HardConstraintMatcher().evaluate(
+        profile,
+        JobPosting(
+            job_id="hybrid-far",
+            company="Hybrid Co",
+            title="Data Engineer",
+            location="Boise, ID",
+            work_mode=WorkMode.HYBRID,
+            source_metadata={
+                "adapter_metadata": {
+                    "latitude": 43.6150,
+                    "longitude": -116.2023,
+                }
+            },
+        ),
+    )
+    assert result.eligible is False
+    assert result.violation_codes == ["hybrid_radius"]

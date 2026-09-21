@@ -46,6 +46,7 @@ Search profiles currently support:
 - excluded keywords;
 - allowed work modes;
 - allowed non-remote locations;
+- hybrid location hubs with latitude/longitude and per-hub radius;
 - employment types;
 - annual salary floor;
 - expected salary currency;
@@ -95,12 +96,18 @@ If the allowed modes contain only `remote`, then:
 
 Unknown work mode is not interpreted optimistically.
 
+When both `remote` and `hybrid` are allowed, remote jobs remain nationwide. Hybrid jobs may be constrained independently through `hybrid_location_hubs`. Each hub carries a label, latitude, longitude, and radius in miles. A hybrid posting is eligible when its provider coordinates fall within at least one selected hub radius. An exact named-hub location can also satisfy the constraint when coordinates are unavailable; otherwise JobOps fails closed rather than guessing distance.
+
 ## Role matching
 
 Requested role phrases are hard title constraints. Role tokens must be represented in the normalized title, with basic aliases such as:
 
 - `AI` -> `artificial intelligence`;
-- `ML` -> `machine learning`.
+- `ML` -> `machine learning`;
+- `BI` -> `business intelligence`;
+- `UX` -> `user experience`;
+- `UI` -> `user interface`;
+- compact web terms such as `frontend`, `fullstack`, and `backend` -> their split title forms.
 
 Broader semantic role matching may be added later, but a probabilistic model must not silently widen a hard user constraint without an explicit profile policy.
 
@@ -114,6 +121,7 @@ Current codes include:
 - `role`;
 - `work_mode`;
 - `location`;
+- `hybrid_radius`;
 - `employment_type`;
 - `excluded_company`;
 - `source`;
@@ -172,3 +180,34 @@ Later Flagship slices use the same profile to:
 8. submit only through the existing one-shot submission authorization gate.
 
 Provider-side search filters are optimizations. The persisted SearchProfile remains the authoritative constraint contract.
+
+
+## Per-run Command Center filters
+
+A broad saved profile can be narrowed for one hunt without changing the saved profile. The onboarded Flagship endpoint and Command Center support transient overrides for role focus, work mode, salary floor, and minimum fit score. This is useful when one candidate profile legitimately spans several career lanes, such as data/analytics, AI/ML, software/web development, and UX/product analysis.
+
+
+### Remote + hybrid example
+
+A profile may keep remote roles open nationwide while limiting hybrid work to several commute regions:
+
+```yaml
+allowed_work_modes:
+  - remote
+  - hybrid
+hybrid_location_hubs:
+  - label: Seattle, WA
+    latitude: 47.6062
+    longitude: -122.3321
+    radius_miles: 50
+  - label: Tacoma, WA
+    latitude: 47.2529
+    longitude: -122.4443
+    radius_miles: 50
+  - label: Lansing, MI
+    latitude: 42.7325
+    longitude: -84.5555
+    radius_miles: 50
+```
+
+The Command Center can override the selected hubs and radius for one hunt without changing the saved profile.

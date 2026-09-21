@@ -130,7 +130,7 @@ def _search_terms(profile: SearchProfile) -> list[str | None]:
             continue
         seen.add(key)
         terms.append(clean)
-        if len(terms) >= 5:
+        if len(terms) >= 20:
             break
     return terms or [None]
 

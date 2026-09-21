@@ -287,3 +287,63 @@ def test_run_onboarded_uses_persisted_candidate_and_evidence() -> None:
     assert readiness.status_code == 200
     assert readiness.json()["prepared_count"] == 1
     app.dependency_overrides.clear()
+
+
+def test_run_onboarded_accepts_transient_filters_without_mutating_saved_profile() -> None:
+    client, factory = _client()
+
+    with factory() as session:
+        SqlAlchemySearchProfileRepository(session).save(_profile())
+        SqlAlchemyCandidateOnboardingRepository(session).save(
+            CandidateOnboardingPayload.model_validate(_payload_dict())
+        )
+        jobs = SqlAlchemyJobRepository(session)
+        jobs.save(
+            JobPosting(
+                job_id="job-data",
+                company="Data Co",
+                title="Data Engineer",
+                description="Build Python SQL data pipelines.",
+                location="Remote",
+                work_mode=WorkMode.REMOTE,
+                salary_min=80000,
+                salary_max=100000,
+                salary_currency="USD",
+                salary_interval="year",
+                required_skills=["Python", "SQL"],
+            )
+        )
+        jobs.save(
+            JobPosting(
+                job_id="job-ai",
+                company="AI Co",
+                title="AI Engineer",
+                description="Build machine learning systems with Python and scikit-learn.",
+                location="Remote",
+                work_mode=WorkMode.REMOTE,
+                salary_min=90000,
+                salary_max=120000,
+                salary_currency="USD",
+                salary_interval="year",
+                required_skills=["Python", "scikit-learn"],
+            )
+        )
+        session.commit()
+
+    response = client.post(
+        "/v1/search-profiles/profile-1/run-onboarded",
+        json={
+            "role_queries": ["AI Engineer"],
+            "minimum_salary": 85000,
+            "allowed_work_modes": ["remote"],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["job"]["job_id"] for item in body["prepared_jobs"]] == ["job-ai"]
+
+    saved = client.get("/v1/search-profiles/profile-1")
+    assert saved.status_code == 200
+    assert saved.json()["role_queries"] == ["Data Engineer", "AI Engineer"]
+    assert saved.json()["minimum_salary"] == 65000
+    app.dependency_overrides.clear()
