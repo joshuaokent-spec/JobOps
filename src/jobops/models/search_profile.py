@@ -3,7 +3,9 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from jobops.models.job import WorkMode
+from jobops.models.candidate import CandidateProfile
+from jobops.models.job import JobPosting, WorkMode
+from jobops.models.scoring import ScoreBreakdown
 
 
 class SalaryFloorPolicy(StrEnum):
@@ -134,3 +136,31 @@ class SearchProfilePage(BaseModel):
     limit: int = Field(ge=1)
     offset: int = Field(ge=0)
     items: list[SearchProfile]
+
+
+class SearchProfilePreviewRequest(BaseModel):
+    candidate: CandidateProfile
+    candidate_pool: int = Field(default=1000, ge=1, le=5000)
+    limit: int = Field(default=25, ge=1, le=100)
+
+
+class SearchProfileRankedJob(BaseModel):
+    job: JobPosting
+    score: ScoreBreakdown
+
+
+class SearchProfileRejectedJob(BaseModel):
+    job_id: str
+    company: str
+    title: str
+    reasons: list[str]
+
+
+class SearchProfilePreview(BaseModel):
+    profile_id: str
+    total_examined: int = Field(ge=0)
+    total_eligible: int = Field(ge=0)
+    total_rejected: int = Field(ge=0)
+    ranked: list[SearchProfileRankedJob] = Field(default_factory=list)
+    rejected_sample: list[SearchProfileRejectedJob] = Field(default_factory=list)
+    rejection_summary: dict[str, int] = Field(default_factory=dict)
