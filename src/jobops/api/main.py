@@ -12,7 +12,7 @@ from jobops.models.scoring import ScoreBreakdown, ScoreRequest
 
 app = FastAPI(
     title="JobOps API",
-    version="0.1.0",
+    version="1.0.0",
     description="Evidence-grounded job-search intelligence API",
 )
 app.include_router(jobs_router)
