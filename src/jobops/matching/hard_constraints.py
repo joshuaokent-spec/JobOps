@@ -70,7 +70,12 @@ class HardConstraintMatcher:
                 reject("source", "Job source is outside the allowed source set.")
 
         searchable_text = " ".join(
-            [job.title, job.description, " ".join(job.required_skills), " ".join(job.preferred_skills)]
+            [
+                job.title,
+                job.description,
+                " ".join(job.required_skills),
+                " ".join(job.preferred_skills),
+            ]
         ).casefold()
         for keyword in profile.required_keywords:
             if keyword.casefold() not in searchable_text:
