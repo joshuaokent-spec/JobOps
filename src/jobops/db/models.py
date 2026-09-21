@@ -90,6 +90,28 @@ class SearchProfileRecord(Base):
     )
 
 
+class CandidateOnboardingRecord(Base):
+    __tablename__ = "candidate_onboarding"
+
+    candidate_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    candidate_profile: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    resume_evidence: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    resume_assets: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
+    run_defaults: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+        index=True,
+    )
+
+
 class FlagshipRunRecord(Base):
     __tablename__ = "flagship_runs"
 
