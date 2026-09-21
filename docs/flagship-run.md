@@ -83,3 +83,21 @@ authorize submission, or submit applications.
 
 F4 consumes review-required states as the exception inbox. F5 owns supported ATS execution and the
 existing one-shot final-submit authorization boundary.
+
+
+## Onboarded run filters
+
+The onboarded endpoint also accepts an optional transient filter object:
+
+```text
+POST /v1/search-profiles/{profile_id}/run-onboarded
+```
+
+Supported one-run overrides are:
+
+- `role_queries`;
+- `allowed_work_modes`;
+- `minimum_salary` / `clear_minimum_salary`;
+- `minimum_fit_score` / `clear_minimum_fit_score`.
+
+These overrides are applied to a validated in-memory copy of the saved SearchProfile for that hunt only. They do not mutate the persisted profile. The Command Center exposes the same controls so a broad career profile can be narrowed to a specific lane without editing YAML or creating a new profile.
