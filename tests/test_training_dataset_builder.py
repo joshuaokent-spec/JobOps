@@ -1,8 +1,8 @@
 import json
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from pydantic import ValidationError
+import pytest
 
 from jobops.learning.dataset_builder import (
     RankingTrainingDatasetBuilder,
