@@ -90,6 +90,60 @@ class SearchProfileRecord(Base):
     )
 
 
+class FlagshipRunRecord(Base):
+    __tablename__ = "flagship_runs"
+
+    run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    profile_id: Mapped[str] = mapped_column(
+        String(100),
+        ForeignKey("search_profiles.profile_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    candidate_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    total_examined: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_hard_eligible: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_hard_rejected: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_fit_eligible: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_fit_rejected: Mapped[int] = mapped_column(Integer, nullable=False)
+    prepared_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    ready_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    review_required_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    rejection_summary: Mapped[dict[str, int]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+        index=True,
+    )
+
+
+class FlagshipPreparedJobRecord(Base):
+    __tablename__ = "flagship_prepared_jobs"
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("flagship_runs.run_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    job_id: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey("jobs.job_id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    rank: Mapped[int] = mapped_column(Integer, nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    resume_family_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    resume_selection_score: Mapped[float] = mapped_column(Float, nullable=False)
+    resume_low_confidence: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    readiness: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    readiness_reasons: Mapped[list[str]] = mapped_column(JSON, default=list)
+    evidence_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+
 class ApprovalRecord(Base):
     __tablename__ = "approval_items"
 
