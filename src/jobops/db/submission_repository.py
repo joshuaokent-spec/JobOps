@@ -28,9 +28,11 @@ class SqlAlchemySubmissionRepository:
             vendor=item.vendor.value,
             state_fingerprint=item.state_fingerprint,
             prepared_payload_sha256=item.prepared_payload_sha256,
+            audit_run_id=item.audit_run_id,
+            browser_session_id=item.browser_session_id,
+            document_url_sha256=item.document_url_sha256,
             submit_selector=item.submit_selector,
             submit_control_sha256=item.submit_control_sha256,
-            audit_run_id=item.audit_run_id,
             authorized_by=item.authorized_by,
             note=item.note,
             status=item.status.value,
@@ -39,6 +41,8 @@ class SqlAlchemySubmissionRepository:
             expires_at=item.expires_at,
             consumed_at=item.consumed_at,
             revoked_at=item.revoked_at,
+            revoked_by=item.revoked_by,
+            revoke_note=item.revoke_note,
         )
         self.session.add(record)
         self.session.flush()
@@ -80,6 +84,8 @@ class SqlAlchemySubmissionRepository:
         authorization_id: str,
         *,
         revoked_at: datetime,
+        revoked_by: str,
+        revoke_note: str,
     ) -> SubmitAuthorization | None:
         record = self.session.scalar(
             select(SubmitAuthorizationRecord)
@@ -92,6 +98,8 @@ class SqlAlchemySubmissionRepository:
             return self._authorization_to_domain(record)
         record.status = SubmissionAuthorizationStatus.REVOKED.value
         record.revoked_at = revoked_at
+        record.revoked_by = revoked_by
+        record.revoke_note = revoke_note
         self.session.flush()
         return self._authorization_to_domain(record)
 
@@ -115,6 +123,8 @@ class SqlAlchemySubmissionRepository:
             job_id=attempt.job_id,
             vendor=attempt.vendor.value,
             state_fingerprint=attempt.state_fingerprint,
+            browser_session_id=attempt.browser_session_id,
+            document_url_sha256=attempt.document_url_sha256,
             submit_selector=attempt.submit_selector,
             submit_control_sha256=attempt.submit_control_sha256,
             audit_run_id=attempt.audit_run_id,
@@ -175,9 +185,11 @@ class SqlAlchemySubmissionRepository:
             vendor=BrowserAuditVendor(record.vendor),
             state_fingerprint=record.state_fingerprint,
             prepared_payload_sha256=record.prepared_payload_sha256,
+            audit_run_id=record.audit_run_id,
+            browser_session_id=record.browser_session_id,
+            document_url_sha256=record.document_url_sha256,
             submit_selector=record.submit_selector,
             submit_control_sha256=record.submit_control_sha256,
-            audit_run_id=record.audit_run_id,
             authorized_by=record.authorized_by,
             note=record.note,
             status=SubmissionAuthorizationStatus(record.status),
@@ -185,6 +197,8 @@ class SqlAlchemySubmissionRepository:
             expires_at=_as_utc(record.expires_at),
             consumed_at=_as_utc(record.consumed_at) if record.consumed_at else None,
             revoked_at=_as_utc(record.revoked_at) if record.revoked_at else None,
+            revoked_by=record.revoked_by,
+            revoke_note=record.revoke_note,
             attempt_id=record.attempt_id,
         )
 
@@ -197,6 +211,8 @@ class SqlAlchemySubmissionRepository:
             job_id=record.job_id,
             vendor=BrowserAuditVendor(record.vendor),
             state_fingerprint=record.state_fingerprint,
+            browser_session_id=record.browser_session_id,
+            document_url_sha256=record.document_url_sha256,
             submit_selector=record.submit_selector,
             submit_control_sha256=record.submit_control_sha256,
             audit_run_id=record.audit_run_id,
