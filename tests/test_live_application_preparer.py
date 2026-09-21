@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from playwright.sync_api import sync_playwright
 
 from jobops.browser import LiveApplicationPreparer
+from jobops.browser.playwright_inspector import PlaywrightBrowserInspector
 from jobops.models.application_execution import (
     ApplicationPreparationBlocker,
     ApplicationPreparationStatus,
@@ -158,6 +159,15 @@ def test_greenhouse_live_preparation_fills_verified_and_approved_values_without_
             assert result.prepared_payload_sha256 is not None
             assert result.submission_allowed is False
 
+            assert page.locator("#first").input_value() == "Casey"
+            assert page.locator("#last").input_value() == "Candidate"
+            assert page.locator("#email").input_value() == "casey@example.com"
+            assert page.locator("#sponsor").input_value() == "no"
+            assert page.locator("#resume").evaluate("el => el.files[0].name") == "resume.pdf"
+
+            capture = PlaywrightBrowserInspector().capture_live_page(page)
+            assert capture.screenshot_png.startswith(b"\\x89PNG")
+            assert capture.redacted_dom_values > 0
             assert page.locator("#first").input_value() == "Casey"
             assert page.locator("#last").input_value() == "Candidate"
             assert page.locator("#email").input_value() == "casey@example.com"
