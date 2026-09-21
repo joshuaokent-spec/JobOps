@@ -120,3 +120,12 @@ def test_role_alias_allows_ai_phrase_matching() -> None:
         _job("ai", title="Senior Artificial Intelligence Engineer"),
     )
     assert result.eligible is True
+
+
+def test_unannualized_salary_is_rejected_by_default() -> None:
+    result = HardConstraintMatcher().evaluate(
+        _profile(),
+        _job("unknown-interval", interval=None),
+    )
+    assert result.eligible is False
+    assert result.violation_codes == ["salary_floor"]
