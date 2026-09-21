@@ -11,6 +11,7 @@ from jobops.db import (
     SqlAlchemyFlagshipReadinessRepository,
     SqlAlchemyJobRepository,
 )
+from jobops.db.onboarding_repository import SqlAlchemyCandidateOnboardingRepository
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
 from jobops.flagship.command_center import CommandCenterService
 from jobops.models.command_center import CommandCenterView
@@ -31,6 +32,7 @@ def get_command_center(
         SqlAlchemyFlagshipReadinessRepository(session),
         SqlAlchemyJobRepository(session),
         SqlAlchemyApprovalRepository(session),
+        SqlAlchemyCandidateOnboardingRepository(session),
     ).build(profile)
 
 
