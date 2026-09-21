@@ -62,6 +62,9 @@ button { cursor: pointer; }
 .filter-field { display: grid; gap: 6px; }
 .filter-field label { color: #b8c4d8; font-size: 13px; }
 .filter-field select[multiple] { min-height: 132px; }
+.mode-options { display: flex; gap: 12px; flex-wrap: wrap; min-height: 38px; align-items: center; }
+.mode-options label { display: inline-flex; align-items: center; gap: 6px; color: #e8edf7; }
+.mode-options input[type="checkbox"] { width: auto; padding: 0; }
 @media (max-width: 850px) { .hunt-filters { grid-template-columns: 1fr; } }
 .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin: 16px 0 24px; }
 .metric, .panel, .job { border: 1px solid #263552; background: #111a2e; border-radius: 10px; }
@@ -220,21 +223,57 @@ function render(view) {
     const modeField = document.createElement("div");
     modeField.className = "filter-field";
     modeField.appendChild(text("label", "Work mode"));
-    const modeSelect = document.createElement("select");
+    const modeOptions = document.createElement("div");
+    modeOptions.className = "mode-options";
+    const modeChecks = {};
     for (const [value, label] of [
-      ["profile", "Use saved profile"],
-      ["remote", "Remote only"],
-      ["hybrid", "Hybrid only"],
-      ["onsite", "Onsite only"],
-      ["any", "Any work mode"]
+      ["remote", "Remote"],
+      ["hybrid", "Hybrid"],
+      ["onsite", "Onsite"]
     ]) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = label;
-      modeSelect.appendChild(option);
+      const wrap = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = value;
+      checkbox.checked = view.profile.allowed_work_modes.includes(value);
+      modeChecks[value] = checkbox;
+      wrap.appendChild(checkbox);
+      wrap.appendChild(document.createTextNode(label));
+      modeOptions.appendChild(wrap);
     }
-    modeField.appendChild(modeSelect);
+    modeField.appendChild(modeOptions);
     filters.appendChild(modeField);
+
+    const hubField = document.createElement("div");
+    hubField.className = "filter-field";
+    hubField.appendChild(text("label", "Hybrid location hubs"));
+    const hubSelect = document.createElement("select");
+    hubSelect.multiple = true;
+    hubSelect.size = Math.min(Math.max(view.profile.hybrid_location_hubs.length, 4), 7);
+    view.profile.hybrid_location_hubs.forEach((hub, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = hub.label;
+      option.selected = true;
+      hubSelect.appendChild(option);
+    });
+    hubField.appendChild(hubSelect);
+    hubField.appendChild(text("span", "Remote stays nationwide; these hubs apply only to hybrid roles.", "muted"));
+    filters.appendChild(hubField);
+
+    const radiusField = document.createElement("div");
+    radiusField.className = "filter-field";
+    radiusField.appendChild(text("label", "Hybrid radius (miles)"));
+    const radiusInput = document.createElement("input");
+    radiusInput.type = "number";
+    radiusInput.min = "1";
+    radiusInput.max = "500";
+    radiusInput.step = "5";
+    radiusInput.value = view.profile.hybrid_location_hubs.length
+      ? String(view.profile.hybrid_location_hubs[0].radius_miles)
+      : "50";
+    radiusField.appendChild(radiusInput);
+    filters.appendChild(radiusField);
 
     const fitField = document.createElement("div");
     fitField.className = "filter-field";
@@ -261,7 +300,38 @@ function render(view) {
         return;
       }
 
-      const runFilters = {role_queries: selectedRoles};
+      const selectedModes = Object.entries(modeChecks)
+        .filter(([, checkbox]) => checkbox.checked)
+        .map(([mode]) => mode);
+      if (!selectedModes.length) {
+        statusEl.textContent = "Select at least one work mode before running the hunt.";
+        statusEl.className = "error";
+        return;
+      }
+
+      const runFilters = {
+        role_queries: selectedRoles,
+        allowed_work_modes: selectedModes
+      };
+
+      if (selectedModes.includes("hybrid")) {
+        const selectedHubs = Array.from(hubSelect.selectedOptions).map(option => {
+          const hub = view.profile.hybrid_location_hubs[Number(option.value)];
+          return {
+            ...hub,
+            radius_miles: Number(radiusInput.value || 50)
+          };
+        });
+        if (view.profile.hybrid_location_hubs.length && !selectedHubs.length) {
+          statusEl.textContent = "Select at least one hybrid location hub.";
+          statusEl.className = "error";
+          return;
+        }
+        runFilters.hybrid_location_hubs = selectedHubs;
+      } else {
+        runFilters.hybrid_location_hubs = [];
+      }
+
       if (salaryInput.value.trim()) {
         runFilters.minimum_salary = Number(salaryInput.value);
       } else {
@@ -272,12 +342,6 @@ function render(view) {
       } else if (view.profile.minimum_fit_score != null) {
         runFilters.clear_minimum_fit_score = true;
       }
-      if (modeSelect.value === "any") {
-        runFilters.allowed_work_modes = [];
-      } else if (modeSelect.value !== "profile") {
-        runFilters.allowed_work_modes = [modeSelect.value];
-      }
-
       runButton.disabled = true;
       runButton.textContent = "Running…";
       statusEl.className = "muted";
