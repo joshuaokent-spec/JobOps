@@ -7,12 +7,16 @@ from sqlalchemy.orm import Session
 
 from jobops.api.dependencies import get_session
 from jobops.config import get_settings
-from jobops.db import SqlAlchemyJobRepository
+from jobops.db import (
+    SqlAlchemyApprovalRepository,
+    SqlAlchemyFlagshipReadinessRepository,
+    SqlAlchemyJobRepository,
+)
 from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepository
 from jobops.discovery.base import DiscoveryProvider
 from jobops.discovery.factory import build_discovery_providers
 from jobops.discovery.runner import DiscoveryService
-from jobops.flagship import FlagshipRunError, FlagshipRunService
+from jobops.flagship import FlagshipReadinessService, FlagshipRunError, FlagshipRunService
 from jobops.matching import BaselineJobScorer
 from jobops.matching.hard_constraints import HardConstraintMatcher
 from jobops.models.discovery import (
@@ -20,6 +24,7 @@ from jobops.models.discovery import (
     DiscoveryRunRequest,
     DiscoveryRunResult,
 )
+from jobops.models.flagship_readiness import FlagshipExceptionInbox, FlagshipReadinessSummary
 from jobops.models.flagship_run import FlagshipRunRequest, FlagshipRunResult
 from jobops.models.query import JobSearchFilters
 from jobops.models.search_profile import (
@@ -233,8 +238,50 @@ async def discover_for_search_profile(
         timeout_seconds=settings.discovery_timeout_seconds,
     )
     result = await service.run(profile, request)
+    SqlAlchemyFlagshipReadinessRepository(session).save(
+        candidate_id=profile.candidate_id,
+        result=result,
+    )
     session.commit()
     return result
+
+
+@router.get("/{profile_id}/readiness", response_model=FlagshipReadinessSummary)
+def get_flagship_readiness(
+    profile_id: str,
+    session: Annotated[Session, Depends(get_session)],
+) -> FlagshipReadinessSummary:
+    profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="search profile not found")
+
+    service = FlagshipReadinessService(
+        SqlAlchemyFlagshipReadinessRepository(session),
+        SqlAlchemyApprovalRepository(session),
+    )
+    summary = service.latest(profile_id)
+    if summary is None:
+        raise HTTPException(status_code=404, detail="no flagship run snapshot found")
+    return summary
+
+
+@router.get("/{profile_id}/exceptions", response_model=FlagshipExceptionInbox)
+def get_flagship_exceptions(
+    profile_id: str,
+    session: Annotated[Session, Depends(get_session)],
+) -> FlagshipExceptionInbox:
+    profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="search profile not found")
+
+    service = FlagshipReadinessService(
+        SqlAlchemyFlagshipReadinessRepository(session),
+        SqlAlchemyApprovalRepository(session),
+    )
+    inbox = service.exceptions(profile_id)
+    if inbox is None:
+        raise HTTPException(status_code=404, detail="no flagship run snapshot found")
+    return inbox
 
 
 @router.post("/{profile_id}/run", response_model=FlagshipRunResult)
