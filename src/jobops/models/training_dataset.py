@@ -63,7 +63,18 @@ class RankingPredictionPoint(BaseModel):
     candidate: CandidateProfile
     job: JobPosting
     prediction_cutoff: datetime
+    candidate_snapshot_observed_at: datetime
+    job_snapshot_observed_at: datetime
     resume_family_id: str | None = Field(default=None, max_length=100)
+
+    @model_validator(mode="after")
+    def _snapshots_must_precede_cutoff(self) -> "RankingPredictionPoint":
+        cutoff = _as_utc(self.prediction_cutoff)
+        if _as_utc(self.candidate_snapshot_observed_at) > cutoff:
+            raise ValueError("candidate snapshot cannot be observed after prediction cutoff")
+        if _as_utc(self.job_snapshot_observed_at) > cutoff:
+            raise ValueError("job snapshot cannot be observed after prediction cutoff")
+        return self
 
 
 FeatureValue = float | int | str | bool | None
@@ -74,6 +85,8 @@ class RankingDatasetRow(BaseModel):
     candidate_id: str
     job_id: str
     prediction_cutoff: datetime
+    candidate_snapshot_observed_at: datetime
+    job_snapshot_observed_at: datetime
     resume_family_id: str | None = None
     features: dict[str, FeatureValue]
     label: int | None = Field(default=None, ge=0, le=1)
