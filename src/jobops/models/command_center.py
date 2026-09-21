@@ -6,6 +6,7 @@ from jobops.models.application_question import ReviewBand
 from jobops.models.flagship_run import FlagshipReadiness
 from jobops.models.flagship_tracking import FlagshipTrackingSummary
 from jobops.models.job import WorkMode
+from jobops.models.onboarding import CandidateOnboardingStatus
 from jobops.models.search_profile import SearchProfile
 
 
@@ -61,12 +62,15 @@ class CommandCenterActions(BaseModel):
     readiness: str
     exceptions: str
     tracking: str
+    onboarding: str
+    run_onboarded: str
     approvals: str
     api_docs: str = "/docs"
 
 
 class CommandCenterView(BaseModel):
     profile: SearchProfile
+    onboarding: CandidateOnboardingStatus
     has_run: bool
     metrics: CommandCenterRunMetrics | None = None
     tracking: FlagshipTrackingSummary | None = None
