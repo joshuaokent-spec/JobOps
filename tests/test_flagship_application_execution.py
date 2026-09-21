@@ -24,7 +24,6 @@ from jobops.models.submission import (
 )
 from jobops.submissions import SubmissionGate
 
-
 _GREENHOUSE = """
 <!doctype html>
 <html>
