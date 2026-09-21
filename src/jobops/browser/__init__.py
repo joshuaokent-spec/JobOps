@@ -18,6 +18,7 @@ from jobops.browser.base import (
 from jobops.browser.field_classifier import SemanticFieldClassifier
 from jobops.browser.greenhouse import GreenhouseBrowserAdapter, GreenhouseDetectionError
 from jobops.browser.lever import LeverBrowserAdapter, LeverDetectionError
+from jobops.browser.live_preparer import LiveApplicationPreparer
 from jobops.browser.planner import BrowserDryRunPlanner
 from jobops.browser.semantic_planner import SemanticPreparationPlanner
 from jobops.browser.workday import WorkdayBrowserPrototype, WorkdayDetectionError
@@ -34,6 +35,7 @@ __all__ = [
     "GreenhouseDetectionError",
     "LeverBrowserAdapter",
     "LeverDetectionError",
+    "LiveApplicationPreparer",
     "LocalBrowserAuditArtifactStore",
     "SemanticFieldClassifier",
     "SemanticPreparationPlanner",

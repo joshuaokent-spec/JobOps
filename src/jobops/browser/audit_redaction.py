@@ -117,6 +117,94 @@ SCREENSHOT_REDACTION_SCRIPT = r"""
 """
 
 
+LIVE_SCREENSHOT_REDACTION_APPLY_SCRIPT = r"""
+() => {
+  let redacted = 0;
+  window.__jobopsAuditLiveTextRestores = [];
+  window.__jobopsAuditLiveStyleRestores = [];
+
+  const rememberStyle = element => {
+    if (!element || element.dataset.jobopsAuditLiveMasked === "true") return;
+    window.__jobopsAuditLiveStyleRestores.push({
+      element,
+      style: element.getAttribute("style"),
+    });
+    element.dataset.jobopsAuditLiveMasked = "true";
+    redacted += 1;
+  };
+
+  for (const element of document.querySelectorAll(
+    "input, textarea, select, [contenteditable='true']"
+  )) {
+    rememberStyle(element);
+    const type = (element.getAttribute("type") || "").toLowerCase();
+    if (type === "checkbox" || type === "radio") {
+      element.style.setProperty("opacity", "0", "important");
+      continue;
+    }
+    element.style.setProperty("color", "transparent", "important");
+    element.style.setProperty("caret-color", "transparent", "important");
+    element.style.setProperty("text-shadow", "none", "important");
+  }
+
+  const piiPatterns = [
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+    /\b\+?\d[\d().\-\s]{6,}\d\b/g,
+    /\b\d{3}-\d{2}-\d{4}\b/g,
+    /\b(?:email|e-mail|phone|mobile|address|street address)\s*:\s*[^\n|]+/gi,
+    /\b(?:work authorization|sponsorship|gender|race|ethnicity)\s*:\s*[^\n|]+/gi,
+    /\b(?:disability|veteran status|consent)\s*:\s*[^\n|]+/gi,
+  ];
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    let value = node.nodeValue || "";
+    let changed = false;
+    for (const pattern of piiPatterns) {
+      pattern.lastIndex = 0;
+      if (pattern.test(value)) {
+        pattern.lastIndex = 0;
+        value = value.replace(pattern, match => {
+          const colon = match.indexOf(":");
+          return colon >= 0 ? match.slice(0, colon + 1) + " [REDACTED]" : "[REDACTED]";
+        });
+        changed = true;
+      }
+    }
+    if (changed) {
+      window.__jobopsAuditLiveTextRestores.push({node, value: node.nodeValue});
+      node.nodeValue = value;
+      redacted += 1;
+    }
+  }
+
+  return redacted;
+}
+"""
+
+LIVE_SCREENSHOT_REDACTION_RESTORE_SCRIPT = r"""
+() => {
+  for (const item of (window.__jobopsAuditLiveTextRestores || [])) {
+    if (item.node) item.node.nodeValue = item.value;
+  }
+  for (const item of (window.__jobopsAuditLiveStyleRestores || [])) {
+    if (!item.element) continue;
+    if (item.style === null) {
+      item.element.removeAttribute("style");
+    } else {
+      item.element.setAttribute("style", item.style);
+    }
+    delete item.element.dataset.jobopsAuditLiveMasked;
+  }
+  window.__jobopsAuditLiveTextRestores = [];
+  window.__jobopsAuditLiveStyleRestores = [];
+  return true;
+}
+"""
+
+
 def sanitize_url(url: str | None) -> str | None:
     if not url:
         return url

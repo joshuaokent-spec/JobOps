@@ -4,7 +4,11 @@ from urllib.parse import urlsplit
 
 from playwright.sync_api import BrowserContext, Frame, Page, Route, sync_playwright
 
-from jobops.browser.audit_redaction import SCREENSHOT_REDACTION_SCRIPT
+from jobops.browser.audit_redaction import (
+    LIVE_SCREENSHOT_REDACTION_APPLY_SCRIPT,
+    LIVE_SCREENSHOT_REDACTION_RESTORE_SCRIPT,
+    SCREENSHOT_REDACTION_SCRIPT,
+)
 from jobops.browser.base import (
     BrowserNavigationBlockedError,
     BrowserPolicyError,
@@ -179,6 +183,45 @@ class PlaywrightBrowserInspector:
 
     def __init__(self, config: BrowserSessionConfig | None = None) -> None:
         self.config = config or BrowserSessionConfig()
+
+    def snapshot_live_page_documents(
+        self,
+        page: Page,
+        *,
+        blocked_requests: int = 0,
+    ) -> list[BrowserPageSnapshot]:
+        """Snapshot an already-owned live Page without navigating or mutating it."""
+        return self._snapshots(page, blocked_requests=blocked_requests)
+
+    def capture_live_page(
+        self,
+        page: Page,
+        *,
+        blocked_requests: int = 0,
+    ) -> BrowserInspectionCapture:
+        """Capture an already-owned prepared Page without changing candidate field state."""
+        documents = self._snapshots(page, blocked_requests=blocked_requests)
+        redacted_dom_values = 0
+        try:
+            redacted_dom_values = sum(
+                int(frame.evaluate(LIVE_SCREENSHOT_REDACTION_APPLY_SCRIPT) or 0)
+                for frame in page.frames
+            )
+            screenshot = page.screenshot(full_page=True, type="png")
+        finally:
+            for frame in page.frames:
+                try:
+                    frame.evaluate(LIVE_SCREENSHOT_REDACTION_RESTORE_SCRIPT)
+                except Exception:
+                    # Restoration is best-effort per frame; preparation state is re-sealed
+                    # by F5 before final authorization.
+                    continue
+        return BrowserInspectionCapture(
+            documents=documents,
+            screenshot_png=screenshot,
+            browser_engine=self.config.engine,
+            redacted_dom_values=redacted_dom_values,
+        )
 
     def inspect_url(self, url: str) -> BrowserPageSnapshot:
         return self.inspect_url_documents(url)[0]
