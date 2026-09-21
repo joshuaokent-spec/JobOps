@@ -12,6 +12,7 @@ from jobops.db.search_profile_repository import SqlAlchemySearchProfileRepositor
 from jobops.discovery.base import DiscoveryProvider
 from jobops.discovery.factory import build_discovery_providers
 from jobops.discovery.runner import DiscoveryService
+from jobops.flagship import FlagshipRunError, FlagshipRunService
 from jobops.matching import BaselineJobScorer
 from jobops.matching.hard_constraints import HardConstraintMatcher
 from jobops.models.discovery import (
@@ -19,6 +20,7 @@ from jobops.models.discovery import (
     DiscoveryRunRequest,
     DiscoveryRunResult,
 )
+from jobops.models.flagship_run import FlagshipRunRequest, FlagshipRunResult
 from jobops.models.query import JobSearchFilters
 from jobops.models.search_profile import (
     SearchProfile,
@@ -208,7 +210,6 @@ def preview_search_profile(
     )
 
 
-
 @router.post("/{profile_id}/discover", response_model=DiscoveryRunResult)
 async def discover_for_search_profile(
     profile_id: str,
@@ -232,5 +233,39 @@ async def discover_for_search_profile(
         timeout_seconds=settings.discovery_timeout_seconds,
     )
     result = await service.run(profile, request)
+    session.commit()
+    return result
+
+
+@router.post("/{profile_id}/run", response_model=FlagshipRunResult)
+async def run_flagship_for_search_profile(
+    profile_id: str,
+    request: FlagshipRunRequest,
+    session: Annotated[Session, Depends(get_session)],
+    providers: Annotated[
+        dict[DiscoveryProviderName, DiscoveryProvider],
+        Depends(get_discovery_providers),
+    ],
+) -> FlagshipRunResult:
+    profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="search profile not found")
+    if not profile.active:
+        raise HTTPException(status_code=409, detail="search profile is inactive")
+
+    settings = get_settings()
+    job_repository = SqlAlchemyJobRepository(session)
+    discovery = DiscoveryService(
+        job_repository,
+        providers,
+        timeout_seconds=settings.discovery_timeout_seconds,
+    )
+    service = FlagshipRunService(job_repository, discovery)
+
+    try:
+        result = await service.run(profile, request)
+    except FlagshipRunError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     session.commit()
     return result
