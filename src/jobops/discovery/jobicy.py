@@ -36,7 +36,9 @@ class JobicyDiscoveryProvider:
         geo = _geo_slug(profile)
         collected: dict[str, SourceJobPosting] = {}
 
+        query_count = 0
         for term in queries:
+            query_count += 1
             params: dict[str, str | int] = {"count": count_per_query}
             if term is not None:
                 params["tag"] = term[:50]
@@ -52,9 +54,9 @@ class JobicyDiscoveryProvider:
                 posting = self._parse_job(item)
                 collected.setdefault(posting.source_job_id, posting)
                 if len(collected) >= limit:
-                    return list(collected.values()), len(queries)
+                    return list(collected.values()), query_count
 
-        return list(collected.values()), len(queries)
+        return list(collected.values()), query_count
 
     async def _get(
         self,
