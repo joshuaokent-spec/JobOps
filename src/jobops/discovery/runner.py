@@ -1,9 +1,11 @@
+from collections import Counter
 from datetime import UTC, datetime
 
 import httpx
 
 from jobops.db.repositories import JobRepository
 from jobops.discovery.base import DiscoveryProvider
+from jobops.matching.hard_constraints import HardConstraintMatcher
 from jobops.models.discovery import (
     DiscoveryProviderDiagnostic,
     DiscoveryProviderName,
@@ -16,7 +18,7 @@ from jobops.normalization.job_normalizer import JobNormalizer
 
 
 class DiscoveryService:
-    """Fan out across discovery providers and persist canonical, deduplicated jobs."""
+    """Fan out across discovery providers and persist eligible canonical jobs."""
 
     def __init__(
         self,
@@ -24,11 +26,13 @@ class DiscoveryService:
         providers: dict[DiscoveryProviderName, DiscoveryProvider],
         *,
         normalizer: JobNormalizer | None = None,
+        matcher: HardConstraintMatcher | None = None,
         timeout_seconds: float = 30.0,
     ) -> None:
         self.repository = repository
         self.providers = providers
         self.normalizer = normalizer or JobNormalizer()
+        self.matcher = matcher or HardConstraintMatcher()
         self.timeout_seconds = timeout_seconds
 
     async def run(
@@ -64,6 +68,10 @@ class DiscoveryService:
                 seen_dedupe_keys,
             )
 
+        rejection_summary: Counter[str] = Counter()
+        for diagnostic in diagnostics:
+            rejection_summary.update(diagnostic.rejection_summary)
+
         completed_at = datetime.now(UTC)
         return DiscoveryRunResult(
             profile_id=profile.profile_id,
@@ -81,8 +89,11 @@ class DiscoveryService:
             ),
             fetched=sum(item.fetched for item in diagnostics),
             normalized=sum(item.normalized for item in diagnostics),
+            eligible=sum(item.eligible for item in diagnostics),
+            rejected=sum(item.rejected for item in diagnostics),
             persisted=sum(item.persisted for item in diagnostics),
             duplicates=sum(item.duplicates for item in diagnostics),
+            rejection_summary=dict(sorted(rejection_summary.items())),
             persisted_job_ids=persisted_ids,
             provider_results=diagnostics,
         )
@@ -136,9 +147,21 @@ class DiscoveryService:
                 )
                 continue
 
+            eligible_jobs = []
+            rejection_counts: Counter[str] = Counter()
+            rejected = 0
+            for job in normalized_jobs:
+                constraint_result = self.matcher.evaluate(profile, job)
+                if constraint_result.eligible:
+                    eligible_jobs.append(job)
+                    continue
+
+                rejected += 1
+                rejection_counts.update(set(constraint_result.violation_codes))
+
             persisted = 0
             duplicates = 0
-            for job in normalized_jobs:
+            for job in eligible_jobs:
                 dedupe_key = job.dedupe_key
                 if dedupe_key and dedupe_key in seen_dedupe_keys:
                     duplicates += 1
@@ -168,7 +191,10 @@ class DiscoveryService:
                     queries=query_count,
                     fetched=len(source_jobs),
                     normalized=len(normalized_jobs),
+                    eligible=len(eligible_jobs),
+                    rejected=rejected,
                     persisted=persisted,
                     duplicates=duplicates,
+                    rejection_summary=dict(sorted(rejection_counts.items())),
                 )
             )
