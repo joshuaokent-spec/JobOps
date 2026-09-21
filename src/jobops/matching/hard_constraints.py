@@ -133,7 +133,12 @@ class HardConstraintMatcher:
                 f"{profile.salary_currency}."
             )
 
-        if job.salary_interval not in (None, "year"):
+        if job.salary_interval != "year":
+            if (
+                profile.unknown_compensation_policy
+                is UnknownCompensationPolicy.ALLOW
+            ):
+                return None
             return "Salary interval is not normalized to annual compensation."
 
         if profile.salary_floor_policy is SalaryFloorPolicy.MINIMUM_OFFERED:
