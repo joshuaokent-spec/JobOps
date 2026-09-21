@@ -112,28 +112,42 @@ ACTIVE --time--> EXPIRED
 
 Consumed, revoked, or expired authorizations cannot be replayed.
 
-## Transactional consumption
+## Transactional consumption and execution locking
 
 The PostgreSQL repository claims an authorization with a row lock before browser
-execution begins.
+execution begins. It also acquires a unique application-level execution lock so
+two different valid authorizations for the same application cannot race to two
+browser clicks.
 
 That ordering is deliberate:
 
 1. validate readiness and exact-state binding;
-2. verify no successful submission already exists for the application;
+2. verify no blocking attempt already exists for the application;
 3. atomically claim the authorization;
-4. create an `EXECUTING` attempt;
-5. enter the final-submit executor.
+4. create an `EXECUTING` attempt and acquire the application execution lock;
+5. **commit the consumed authorization and executing attempt durably**;
+6. only then enter the final-submit executor;
+7. persist the final receipt/outcome in a second commit.
 
-Two concurrent callers therefore cannot both spend the same authorization.
+The pre-click commit matters. If the process crashes after the employer may have
+received the click, the database still contains a consumed authorization and an
+`EXECUTING` attempt. Restarting the process cannot resurrect the one-shot
+authorization and cannot silently retry the application.
 
-The database also enforces:
+The database enforces:
 
 - at most one submission attempt per authorization;
+- at most one active/uncertain execution lock per application;
 - at most one successful-submission key per application.
 
+A definite pre-click `FAILED` outcome with `submit_invoked=false` releases the
+application execution lock so the user may review and issue a fresh
+authorization. `EXECUTING`, `SUCCEEDED`, and `INDETERMINATE` outcomes retain
+the lock because a second click could duplicate a real employer-side
+submission.
+
 The service performs the same checks before the database constraints are needed,
-but persistence remains a backstop.
+but persistence remains the concurrency and crash-safety backstop.
 
 ## Browser executor
 
@@ -273,6 +287,12 @@ Regression coverage includes:
 - duplicate-success prevention;
 - exception -> indeterminate behavior;
 - PostgreSQL persistence of browser/session bindings;
+- cross-session proof that authorization consumption and the `EXECUTING`
+  attempt are committed before the executor receives control;
+- database rejection of a second application execution lock from a different
+  authorization;
+- lock release after a definite pre-click failure and lock retention for
+  uncertain/successful execution;
 - safe receipt metadata sanitization;
 - real Chromium execution of one authorized synthetic final-submit control;
 - second execution rejection without a second click;
