@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from jobops.ml import RankingDatasetBuilder
-from jobops.models.candidate import CandidateProfile
+from jobops.models.candidate import CandidateFact, CandidateProfile, FactRisk
 from jobops.models.feedback import FeedbackEvent, FeedbackEventSource, FeedbackEventType
 from jobops.models.job import JobPosting, WorkMode
 from jobops.models.training_dataset import (
@@ -309,3 +309,37 @@ def test_prediction_point_rejects_future_candidate_or_job_snapshot() -> None:
             candidate_snapshot_observed_at=_BASE,
             job_snapshot_observed_at=_BASE + timedelta(seconds=1),
         )
+
+
+def test_training_row_contains_derived_features_not_raw_candidate_facts() -> None:
+    candidate = _candidate().model_copy(
+        update={
+            "facts": [
+                CandidateFact(
+                    key="private_note",
+                    value="DO-NOT-LEAK-private-candidate-text",
+                    evidence=["private-source"],
+                    verified=True,
+                    risk=FactRisk.HIGH,
+                )
+            ]
+        }
+    )
+    point = RankingPredictionPoint(
+        candidate=candidate,
+        job=_job(),
+        prediction_cutoff=_BASE,
+        candidate_snapshot_observed_at=_BASE - timedelta(minutes=2),
+        job_snapshot_observed_at=_BASE - timedelta(minutes=1),
+    )
+
+    row = RankingDatasetBuilder().build(
+        [point],
+        [],
+        generated_at=_BASE + timedelta(days=8),
+    ).rows[0]
+    serialized = row.model_dump_json()
+
+    assert "DO-NOT-LEAK" not in serialized
+    assert "private-source" not in serialized
+    assert "private_note" not in serialized
