@@ -120,6 +120,7 @@ class CommandCenterService:
             ),
             ready_jobs=ready_jobs,
             review_required_jobs=review_jobs,
+            pending_approval_count=len(approvals),
             pending_approvals=approvals,
             missing_job_ids=sorted(missing_job_ids),
             actions=actions,
