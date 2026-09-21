@@ -53,7 +53,8 @@ async def _unused_client_handler(request):
 
 
 @pytest.mark.asyncio
-async def test_discovery_fanout_prefers_existing_canonical_job_and_survives_provider_failure() -> None:
+async def test_discovery_fanout_prefers_existing_canonical_job_and_survives_provider_failure(
+) -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
     normalizer = JobNormalizer()
