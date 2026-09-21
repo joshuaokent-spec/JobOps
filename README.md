@@ -51,13 +51,15 @@ See `docs/flagship-search-profiles.md` for the hard-constraint contract. F2 adds
 
 F3 adds `POST /v1/search-profiles/{profile_id}/run`, which composes discovery, store-wide hard constraints, deterministic ranking, explainable resume-family selection, verified evidence retrieval, and readiness packaging in one call. See `docs/flagship-run.md` for the orchestration contract.
 
+F4 persists a privacy-minimized snapshot after each successful Flagship run and adds `GET /v1/search-profiles/{profile_id}/readiness` plus `GET /v1/search-profiles/{profile_id}/exceptions`, so ready work stays quiet and only review-required jobs/pending approvals surface for candidate attention. See `docs/flagship-readiness.md`.
+
 ### Flagship roadmap
 
 - F1 persistent search profile + hard constraints — complete;
 - F2 multi-provider internet job discovery — complete;
 - F3 end-to-end discover/filter/rank/prepare orchestration — complete;
-- F4 exception/review inbox and readiness summary — next;
-- F5 supported ATS application execution orchestration;
+- F4 exception/review inbox and readiness summary — complete;
+- F5 supported ATS application execution orchestration — next;
 - F6 command-center API/dashboard;
 - F7 scheduled/daily runs and tracking summaries;
 - F8 real candidate/resume onboarding and v1 demo/release.

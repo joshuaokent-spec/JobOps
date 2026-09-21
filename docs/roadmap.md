@@ -50,7 +50,7 @@ The flagship product is the priority: give JobOps a candidate/resume evidence ba
 - [x] F1 — Persistent search profiles + hard-constraint engine
 - [x] F2 — Multi-provider internet job discovery
 - [x] F3 — End-to-end flagship run orchestrator
-- [ ] F4 — Exception/review inbox + readiness summary
+- [x] F4 — Exception/review inbox + readiness summary
 - [ ] F5 — Supported ATS application execution orchestration
 - [ ] F6 — Command-center API/dashboard
 - [ ] F7 — Scheduled/daily flagship runs + tracking summary
