@@ -60,7 +60,13 @@ class PrivateFlagshipRunInputStore:
             if not isinstance(payload, dict):
                 raise ValueError("run input must be an object")
             return FlagshipRunRequest.model_validate(payload)
-        except (OSError, json.JSONDecodeError, yaml.YAMLError, ValidationError, ValueError) as exc:
+        except (
+            OSError,
+            json.JSONDecodeError,
+            yaml.YAMLError,
+            ValidationError,
+            ValueError,
+        ) as exc:
             raise FlagshipRunInputError(
                 "invalid_input",
                 f"private flagship run input is invalid ({type(exc).__name__})",
@@ -97,7 +103,9 @@ class DailyFlagshipRunner:
 
         async with httpx.AsyncClient(timeout=self.discovery_timeout_seconds) as client:
             for profile in profiles:
-                results.append(await self._run_profile(profile.profile_id, profile.name, client))
+                results.append(
+                    await self._run_profile(profile.profile_id, profile.name, client)
+                )
 
         completed_at = datetime.now(UTC)
         return ScheduledFlagshipBatchResult(
