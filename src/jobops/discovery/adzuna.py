@@ -52,12 +52,12 @@ class AdzunaDiscoveryProvider:
         limit: int,
         client: httpx.AsyncClient,
     ) -> tuple[list[SourceJobPosting], int]:
-        terms = _search_terms(profile)
-        per_query = max(1, math.ceil(limit / len(terms)))
+        specs = _query_specs(profile)
+        per_query = max(1, math.ceil(limit / len(specs)))
         collected: dict[str, SourceJobPosting] = {}
         queries = 0
 
-        for term in terms:
+        for term, where, mode_hint in specs:
             pages = max(1, math.ceil(per_query / self.page_size))
             for page in range(1, pages + 1):
                 queries += 1
@@ -65,6 +65,8 @@ class AdzunaDiscoveryProvider:
                     client,
                     profile=profile,
                     term=term,
+                    where=where,
+                    mode_hint=mode_hint,
                     page=page,
                     page_limit=min(self.page_size, per_query),
                 )
@@ -87,6 +89,8 @@ class AdzunaDiscoveryProvider:
         *,
         profile: SearchProfile,
         term: str | None,
+        where: str | None,
+        mode_hint: str | None,
         page: int,
         page_limit: int,
     ) -> dict[str, Any]:
@@ -97,12 +101,12 @@ class AdzunaDiscoveryProvider:
             "content-type": "application/json",
         }
         if term:
-            query = term
-            if profile.allowed_work_modes == [WorkMode.REMOTE]:
-                query = f"{query} remote"
+            query = term if mode_hint is None else f"{term} {mode_hint}"
             params["what"] = query
-        if profile.locations:
-            params["where"] = profile.locations[0]
+        elif mode_hint:
+            params["what"] = mode_hint
+        if where:
+            params["where"] = where
         if profile.minimum_salary is not None:
             params["salary_min"] = profile.minimum_salary
         if profile.excluded_keywords:
@@ -194,9 +198,56 @@ def _search_terms(profile: SearchProfile) -> list[str | None]:
             continue
         seen.add(key)
         terms.append(clean)
-        if len(terms) >= 5:
+        if len(terms) >= 20:
             break
     return terms or [None]
+
+
+def _query_specs(
+    profile: SearchProfile,
+    *,
+    max_queries: int = 40,
+) -> list[tuple[str | None, str | None, str | None]]:
+    terms = _search_terms(profile)
+    modes = set(profile.allowed_work_modes)
+    if not modes:
+        where = profile.locations[0] if profile.locations else None
+        return [(term, where, None) for term in terms][:max_queries]
+
+    specs: list[tuple[str | None, str | None, str | None]] = []
+    if WorkMode.REMOTE in modes:
+        specs.extend((term, None, "remote") for term in terms)
+
+    if WorkMode.HYBRID in modes:
+        locations = [hub.label for hub in profile.hybrid_location_hubs]
+        if not locations:
+            locations = list(profile.locations)
+        if not locations:
+            locations = [None]
+        round_index = 0
+        while len(specs) < max_queries:
+            added = False
+            for term_index, term in enumerate(terms):
+                location = locations[(term_index + round_index) % len(locations)]
+                spec = (term, location, "hybrid")
+                if spec not in specs:
+                    specs.append(spec)
+                    added = True
+                    if len(specs) >= max_queries:
+                        break
+            if not added or round_index + 1 >= len(locations):
+                break
+            round_index += 1
+
+    if WorkMode.ONSITE in modes and len(specs) < max_queries:
+        locations = list(profile.locations) or [None]
+        for term_index, term in enumerate(terms):
+            location = locations[term_index % len(locations)]
+            specs.append((term, location, None))
+            if len(specs) >= max_queries:
+                break
+
+    return specs[:max_queries] or [(term, None, None) for term in terms][:max_queries]
 
 
 def _workplace_type(
