@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Protocol
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select\nfrom sqlalchemy.orm import Session
 
 from jobops.db.models import CandidateOnboardingRecord
 from jobops.models.candidate import CandidateProfile
@@ -26,7 +26,12 @@ class CandidateOnboardingRepository(Protocol):
 
     def delete(self, candidate_id: str) -> bool: ...
 
-    def list(self, *, limit: int = 100, offset: int = 0) -> Sequence[CandidateOnboarding]: ...
+    def list(
+        self,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> Sequence[CandidateOnboarding]: ...
 
 
 class SqlAlchemyCandidateOnboardingRepository:
@@ -85,8 +90,6 @@ class SqlAlchemyCandidateOnboardingRepository:
         limit: int = 100,
         offset: int = 0,
     ) -> Sequence[CandidateOnboarding]:
-        from sqlalchemy import select
-
         statement = (
             select(CandidateOnboardingRecord)
             .order_by(CandidateOnboardingRecord.candidate_id.asc())
