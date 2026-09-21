@@ -239,7 +239,9 @@ def test_authorization_is_bound_to_exact_prepared_state() -> None:
             now=_NOW + timedelta(seconds=1),
         )
 
-    assert repo.get_authorization(authorization.authorization_id).status is SubmissionAuthorizationStatus.ACTIVE
+    current = repo.get_authorization(authorization.authorization_id)
+    assert current is not None
+    assert current.status is SubmissionAuthorizationStatus.ACTIVE
 
 
 def test_authorization_for_job_a_cannot_submit_job_b() -> None:
