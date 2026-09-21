@@ -59,6 +59,10 @@ class SearchProfileRecord(Base):
     excluded_keywords: Mapped[list[str]] = mapped_column(JSON, default=list)
     allowed_work_modes: Mapped[list[str]] = mapped_column(JSON, default=list)
     locations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    hybrid_location_hubs: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON,
+        default=list,
+    )
     employment_types: Mapped[list[str]] = mapped_column(JSON, default=list)
     minimum_salary: Mapped[int | None] = mapped_column(Integer, nullable=True)
     salary_currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
