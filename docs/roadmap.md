@@ -45,7 +45,7 @@
 
 ## M4 — Learning System
 
-- [ ] Feedback event schema
+- [x] Feedback event schema
 - [ ] Training dataset builder
 - [ ] Learned ranking baseline (logistic regression)
 - [ ] Gradient-boosted ranking model
