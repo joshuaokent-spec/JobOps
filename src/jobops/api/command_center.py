@@ -184,6 +184,24 @@ function render(view) {
   }
   content.appendChild(metrics);
 
+  const actions = panel("Operator links");
+  const actionLinks = [
+    ["Profile JSON", view.actions.profile],
+    ["Readiness JSON", view.actions.readiness],
+    ["Exceptions JSON", view.actions.exceptions],
+    ["Pending approvals", view.actions.approvals + "?status=pending"],
+    ["API docs", view.actions.api_docs]
+  ];
+  for (const [label, href] of actionLinks) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.textContent = label;
+    link.style.marginRight = "12px";
+    actions.appendChild(link);
+  }
+  actions.appendChild(text("p", `Run endpoint: POST ${view.actions.run} (use API docs until F8 stores candidate/resume onboarding data)`, "muted"));
+  content.appendChild(actions);
+
   const ready = panel(`Ready jobs (${view.ready_jobs.length})`);
   const readyList = document.createElement("div");
   readyList.className = "jobs";
