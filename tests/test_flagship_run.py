@@ -206,6 +206,19 @@ def test_flagship_run_composes_discovery_ranking_resume_and_evidence() -> None:
             "project-pipeline"
         )
         assert prepared["readiness"] == "ready"
+
+        readiness = client.get(f"/v1/search-profiles/{profile_id}/readiness")
+        assert readiness.status_code == 200
+        readiness_payload = readiness.json()
+        assert readiness_payload["prepared_count"] == 1
+        assert readiness_payload["ready_count"] == 1
+        assert readiness_payload["review_required_count"] == 0
+        assert readiness_payload["prepared_jobs"][0]["job_id"] == prepared["job"]["job_id"]
+        assert readiness_payload["prepared_jobs"][0]["evidence_ids"] == ["project-pipeline"]
+
+        exceptions = client.get(f"/v1/search-profiles/{profile_id}/exceptions")
+        assert exceptions.status_code == 200
+        assert exceptions.json()["total_exceptions"] == 0
     finally:
         app.dependency_overrides.clear()
 
