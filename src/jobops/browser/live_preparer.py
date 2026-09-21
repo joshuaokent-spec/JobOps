@@ -349,7 +349,9 @@ class LiveApplicationPreparer:
             return
 
         if field.kind is BrowserFieldKind.RADIO:
-            raise ValueError(\n                "radio-group execution is not supported until option identity is sealed"\n            )
+            raise ValueError(
+                "radio-group execution is not supported until option identity is sealed"
+            )
 
         raise ValueError(f"unsupported browser field kind: {field.kind.value}")
 
