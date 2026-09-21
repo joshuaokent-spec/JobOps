@@ -23,6 +23,7 @@ class ApplicationPreparationBlocker(StrEnum):
     REQUIRED_FIELD_UNRESOLVED = "required_field_unresolved"
     FILE_NOT_AVAILABLE = "file_not_available"
     FIELD_WRITE_FAILED = "field_write_failed"
+    ATS_DETECTION_FAILED = "ats_detection_failed"
     SUBMIT_CONTROL_NOT_UNIQUE = "submit_control_not_unique"
     WORKDAY_STATEFUL_PROGRESSION = "workday_stateful_progression"
     UNSUPPORTED_VENDOR = "unsupported_vendor"
