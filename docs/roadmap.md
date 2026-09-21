@@ -53,7 +53,7 @@ The flagship product is the priority: give JobOps a candidate/resume evidence ba
 - [x] F4 — Exception/review inbox + readiness summary
 - [x] F5 — Supported ATS application execution orchestration
 - [x] F6 — Command-center API/dashboard
-- [ ] F7 — Scheduled/daily flagship runs + tracking summary
+- [x] F7 — Scheduled/daily flagship runs + tracking summary
 - [ ] F8 — Real candidate/resume onboarding + v1 demo/release
 
 ## Labs / Expansion — M4 Learning System
