@@ -1,12 +1,12 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+from pydantic import ValidationError
+
 from jobops.ml import RankingDatasetBuilder
 from jobops.models.candidate import CandidateProfile
 from jobops.models.feedback import FeedbackEvent, FeedbackEventSource, FeedbackEventType
 from jobops.models.job import JobPosting, WorkMode
-from pydantic import ValidationError
-import pytest
-
 from jobops.models.training_dataset import (
     DatasetSplit,
     RankingDatasetSpec,
