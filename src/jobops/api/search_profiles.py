@@ -17,6 +17,7 @@ from jobops.discovery.base import DiscoveryProvider
 from jobops.discovery.factory import build_discovery_providers
 from jobops.discovery.runner import DiscoveryService
 from jobops.flagship import FlagshipReadinessService, FlagshipRunError, FlagshipRunService
+from jobops.flagship.tracking import FlagshipTrackingService
 from jobops.matching import BaselineJobScorer
 from jobops.matching.hard_constraints import HardConstraintMatcher
 from jobops.models.discovery import (
@@ -26,6 +27,7 @@ from jobops.models.discovery import (
 )
 from jobops.models.flagship_readiness import FlagshipExceptionInbox, FlagshipReadinessSummary
 from jobops.models.flagship_run import FlagshipRunRequest, FlagshipRunResult
+from jobops.models.flagship_tracking import FlagshipTrackingSummary
 from jobops.models.query import JobSearchFilters
 from jobops.models.search_profile import (
     SearchProfile,
@@ -278,6 +280,23 @@ def get_flagship_exceptions(
     if inbox is None:
         raise HTTPException(status_code=404, detail="no flagship run snapshot found")
     return inbox
+
+
+@router.get("/{profile_id}/tracking", response_model=FlagshipTrackingSummary)
+def get_flagship_tracking(
+    profile_id: str,
+    session: Annotated[Session, Depends(get_session)],
+) -> FlagshipTrackingSummary:
+    profile = SqlAlchemySearchProfileRepository(session).get(profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="search profile not found")
+
+    summary = FlagshipTrackingService(
+        SqlAlchemyFlagshipReadinessRepository(session)
+    ).latest(profile_id)
+    if summary is None:
+        raise HTTPException(status_code=404, detail="no flagship run snapshot found")
+    return summary
 
 
 @router.post("/{profile_id}/run", response_model=FlagshipRunResult)
