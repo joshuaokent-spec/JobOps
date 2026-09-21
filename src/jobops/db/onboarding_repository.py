@@ -2,7 +2,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Protocol
 
-from sqlalchemy import select\nfrom sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from jobops.db.models import CandidateOnboardingRecord
 from jobops.models.candidate import CandidateProfile
