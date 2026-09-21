@@ -76,6 +76,8 @@ def downgrade() -> None:
         )
     op.drop_table("flagship_prepared_jobs")
 
-    for column in reversed(("profile_id", "candidate_id", "started_at", "completed_at", "created_at")):
+    for column in reversed(
+        ("profile_id", "candidate_id", "started_at", "completed_at", "created_at")
+    ):
         op.drop_index(op.f(f"ix_flagship_runs_{column}"), table_name="flagship_runs")
     op.drop_table("flagship_runs")
