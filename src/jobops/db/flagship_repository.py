@@ -24,6 +24,14 @@ class FlagshipReadinessRepository(Protocol):
 
     def latest(self, profile_id: str) -> FlagshipReadinessSummary | None: ...
 
+    def history(
+        self,
+        profile_id: str,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> Sequence[FlagshipReadinessSummary]: ...
+
     def prepared_jobs(
         self,
         run_id: str,
@@ -87,6 +95,16 @@ class SqlAlchemyFlagshipReadinessRepository:
         return self._to_summary(record)
 
     def latest(self, profile_id: str) -> FlagshipReadinessSummary | None:
+        history = self.history(profile_id, limit=1)
+        return history[0] if history else None
+
+    def history(
+        self,
+        profile_id: str,
+        *,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> Sequence[FlagshipReadinessSummary]:
         statement = (
             select(FlagshipRunRecord)
             .where(FlagshipRunRecord.profile_id == profile_id.strip())
@@ -95,10 +113,13 @@ class SqlAlchemyFlagshipReadinessRepository:
                 FlagshipRunRecord.created_at.desc(),
                 FlagshipRunRecord.run_id.desc(),
             )
-            .limit(1)
+            .limit(limit)
+            .offset(offset)
         )
-        record = self.session.scalar(statement)
-        return None if record is None else self._to_summary(record)
+        return [
+            self._to_summary(record)
+            for record in self.session.scalars(statement).all()
+        ]
 
     def prepared_jobs(
         self,
