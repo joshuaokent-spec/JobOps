@@ -106,11 +106,11 @@ from jobops.models.submission import (
     SubmitAuthorizationRevoke,
 )
 from jobops.models.training_dataset import (
+    RANKING_FEATURE_NAMES,
     DatasetDiagnostics,
     DatasetLabelDisposition,
     DatasetManifest,
     DatasetSplit,
-    RANKING_FEATURE_NAMES,
     RankingDecisionPoint,
     RankingFeatureRow,
     RankingLabelPolicy,
