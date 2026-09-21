@@ -109,7 +109,18 @@ class RankingDatasetBuilder:
         diagnostics = self._diagnostics(rows)
         maximum_observation = self._maximum_observation_used(rows, all_events)
         hash_payload = {
-            "spec": dataset_spec.model_dump(mode="json"),
+            "spec": {
+                "schema_version": dataset_spec.schema_version,
+                "builder_version": dataset_spec.builder_version,
+                "label_window_hours": dataset_spec.label_window_hours,
+                "validation_fraction": dataset_spec.validation_fraction,
+                "positive_events": sorted(
+                    event.value for event in dataset_spec.label_policy.positive_events
+                ),
+                "negative_events": sorted(
+                    event.value for event in dataset_spec.label_policy.negative_events
+                ),
+            },
             "rows": [row.model_dump(mode="json") for row in rows],
         }
         dataset_hash = stable_dataset_hash(hash_payload)
