@@ -94,9 +94,29 @@ class MemorySubmissionRepository:
                 return attempt.model_copy(deep=True)
         return None
 
-    def create_attempt(self, attempt: SubmissionAttempt) -> SubmissionAttempt:
+    def get_blocking_attempt(self, application_id: str) -> SubmissionAttempt | None:
+        for attempt in self.attempts.values():
+            if attempt.application_id != application_id:
+                continue
+            if attempt.status in {
+                SubmissionAttemptStatus.EXECUTING,
+                SubmissionAttemptStatus.SUCCEEDED,
+                SubmissionAttemptStatus.INDETERMINATE,
+            } or attempt.submit_invoked:
+                return attempt.model_copy(deep=True)
+        return None
+
+    def create_attempt(self, attempt: SubmissionAttempt) -> SubmissionAttempt | None:
+        if self.get_blocking_attempt(attempt.application_id) is not None:
+            return None
         self.attempts[attempt.attempt_id] = attempt.model_copy(deep=True)
         return attempt.model_copy(deep=True)
+
+    def persist_execution_claim(self) -> None:
+        return None
+
+    def persist_execution_result(self) -> None:
+        return None
 
     def finalize_attempt(
         self,
@@ -138,6 +158,19 @@ class SuccessExecutor:
             status=SubmissionAttemptStatus.SUCCEEDED,
             submit_invoked=True,
             receipt_metadata={"synthetic_receipt": "ok"},
+        )
+
+
+class FailedPreflightExecutor:
+    def execute(
+        self,
+        authorization: SubmitAuthorization,
+        state: PreparedSubmissionState,
+    ) -> SubmissionExecutionOutcome:
+        return SubmissionExecutionOutcome(
+            status=SubmissionAttemptStatus.FAILED,
+            submit_invoked=False,
+            error_code="synthetic_preflight_failure",
         )
 
 
@@ -364,3 +397,69 @@ def test_revoked_authorization_cannot_submit() -> None:
             SuccessExecutor(),
             now=_NOW + timedelta(seconds=2),
         )
+
+
+def test_indeterminate_attempt_blocks_fresh_authorization() -> None:
+    repo = MemorySubmissionRepository()
+    gate = SubmissionGate(repo)
+    authorization = _authorize(gate)
+    gate.execute(
+        SubmissionExecutionRequest(
+            authorization_id=authorization.authorization_id,
+            state=_state(),
+        ),
+        ExplodingExecutor(),
+        now=_NOW + timedelta(seconds=1),
+    )
+
+    with pytest.raises(DuplicateSubmissionError, match="indeterminate"):
+        _authorize(gate, now=_NOW + timedelta(seconds=2))
+
+
+def test_definite_preclick_failure_releases_application_lock() -> None:
+    repo = MemorySubmissionRepository()
+    gate = SubmissionGate(repo)
+    authorization = _authorize(gate)
+    attempt = gate.execute(
+        SubmissionExecutionRequest(
+            authorization_id=authorization.authorization_id,
+            state=_state(),
+        ),
+        FailedPreflightExecutor(),
+        now=_NOW + timedelta(seconds=1),
+    )
+
+    assert attempt.status is SubmissionAttemptStatus.FAILED
+    assert attempt.submit_invoked is False
+    fresh = _authorize(gate, now=_NOW + timedelta(seconds=2))
+    assert fresh.status is SubmissionAuthorizationStatus.ACTIVE
+
+
+def test_two_preissued_authorizations_cannot_both_reach_executor() -> None:
+    repo = MemorySubmissionRepository()
+    gate = SubmissionGate(repo)
+    first = _authorize(gate)
+    second = _authorize(gate)
+    first_executor = SuccessExecutor()
+    second_executor = SuccessExecutor()
+
+    gate.execute(
+        SubmissionExecutionRequest(
+            authorization_id=first.authorization_id,
+            state=_state(),
+        ),
+        first_executor,
+        now=_NOW + timedelta(seconds=1),
+    )
+
+    with pytest.raises(DuplicateSubmissionError, match="successful submission"):
+        gate.execute(
+            SubmissionExecutionRequest(
+                authorization_id=second.authorization_id,
+                state=_state(),
+            ),
+            second_executor,
+            now=_NOW + timedelta(seconds=2),
+        )
+    assert first_executor.calls == 1
+    assert second_executor.calls == 0
