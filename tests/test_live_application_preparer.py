@@ -17,7 +17,6 @@ from jobops.models.approval import (
 from jobops.models.browser_audit import BrowserAuditVendor
 from jobops.models.candidate import CandidateFact, CandidateProfile
 
-
 _GREENHOUSE = """
 <!doctype html>
 <html>
