@@ -139,6 +139,43 @@ class SearchProfilePage(BaseModel):
     items: list[SearchProfile]
 
 
+class SearchProfileRunFilters(BaseModel):
+    """Optional transient overrides for one Flagship hunt."""
+
+    role_queries: list[str] | None = None
+    allowed_work_modes: list[WorkMode] | None = None
+    minimum_salary: int | None = Field(default=None, ge=0)
+    clear_minimum_salary: bool = False
+    minimum_fit_score: float | None = Field(default=None, ge=0.0, le=100.0)
+    clear_minimum_fit_score: bool = False
+
+    @field_validator("role_queries")
+    @classmethod
+    def _normalize_role_queries(cls, values: list[str] | None) -> list[str] | None:
+        if values is None:
+            return None
+        result: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            clean = " ".join(value.split()).strip()
+            if not clean:
+                continue
+            key = clean.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            result.append(clean)
+        return result
+
+    @field_validator("allowed_work_modes")
+    @classmethod
+    def _deduplicate_run_work_modes(
+        cls,
+        values: list[WorkMode] | None,
+    ) -> list[WorkMode] | None:
+        return None if values is None else list(dict.fromkeys(values))
+
+
 class SearchProfilePreviewRequest(BaseModel):
     candidate: CandidateProfile
     candidate_pool: int = Field(default=1000, ge=1, le=5000)
