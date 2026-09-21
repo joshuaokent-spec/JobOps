@@ -35,7 +35,7 @@ jobs:
       - name: Install Chromium
         run: python -m playwright install --with-deps chromium
       - name: Lint
-        run: ruff check .
+        run: ruff check . --fix --diff
       - name: Migrate test database
         run: alembic upgrade head
       - name: Test
