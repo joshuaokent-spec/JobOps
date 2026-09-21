@@ -33,7 +33,7 @@
 - [x] Evidence verifier
 - [x] Approval queue
 
-## M3 — Browser Automation
+## M3 — Browser Automation — complete
 
 - [x] Playwright abstraction
 - [x] Generic semantic form-field detector
@@ -41,7 +41,7 @@
 - [x] Lever browser adapter
 - [x] Workday research/stateful prototype
 - [x] Screenshot/audit artifacts
-- [ ] Explicit submit gate
+- [x] Explicit submit gate
 
 ## M4 — Learning System
 
