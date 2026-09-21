@@ -250,6 +250,13 @@ def test_run_onboarded_uses_persisted_candidate_and_evidence() -> None:
         )
         session.commit()
 
+    command_center = client.get("/v1/command-center/profile-1")
+    assert command_center.status_code == 200
+    assert command_center.json()["onboarding"]["ready_to_run"] is True
+    assert command_center.json()["onboarding"][
+        "ready_for_application_execution"
+    ] is True
+
     response = client.post("/v1/search-profiles/profile-1/run-onboarded")
     assert response.status_code == 200
     body = response.json()
