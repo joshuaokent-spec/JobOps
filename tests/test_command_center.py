@@ -215,6 +215,9 @@ def test_command_center_dashboard_is_zero_build_html() -> None:
     assert "Role focus" in response.text
     assert "Minimum salary" in response.text
     assert "Work mode" in response.text
+    assert "Hybrid location hubs" in response.text
+    assert "Hybrid radius (miles)" in response.text
+    assert "Remote stays nationwide" in response.text
     assert "Minimum fit score" in response.text
     assert '"Content-Type": "application/json"' in response.text
     assert "jobops-onboard" in response.text
