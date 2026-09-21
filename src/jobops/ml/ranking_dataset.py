@@ -245,6 +245,8 @@ class RankingDatasetBuilder:
             candidate_id=candidate_id,
             job_id=point.job.job_id,
             prediction_cutoff=cutoff,
+            candidate_snapshot_observed_at=_as_utc(point.candidate_snapshot_observed_at),
+            job_snapshot_observed_at=_as_utc(point.job_snapshot_observed_at),
             resume_family_id=point.resume_family_id,
             features=features,
             label=label,
