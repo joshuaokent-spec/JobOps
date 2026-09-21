@@ -1,7 +1,9 @@
 from jobops.db.approval_repository import ApprovalRepository, SqlAlchemyApprovalRepository
 from jobops.db.base import Base
+from jobops.db.feedback_repository import FeedbackRepository, SqlAlchemyFeedbackRepository
 from jobops.db.models import (
     ApprovalRecord,
+    FeedbackEventRecord,
     JobRecord,
     SubmissionAttemptRecord,
     SubmitAuthorizationRecord,
@@ -14,13 +16,16 @@ __all__ = [
     "ApprovalRecord",
     "ApprovalRepository",
     "Base",
+    "FeedbackEventRecord",
+    "FeedbackRepository",
     "JobRecord",
-    "SubmissionAttemptRecord",
-    "SubmitAuthorizationRecord",
     "JobRepository",
+    "SubmissionAttemptRecord",
     "SqlAlchemyApprovalRepository",
+    "SqlAlchemyFeedbackRepository",
     "SqlAlchemyJobRepository",
     "SqlAlchemySubmissionRepository",
+    "SubmitAuthorizationRecord",
     "build_engine",
     "build_session_factory",
     "session_scope",

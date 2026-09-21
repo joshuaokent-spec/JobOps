@@ -179,3 +179,43 @@ class SubmissionAttemptRecord(Base):
         nullable=True,
         unique=True,
     )
+
+
+
+class FeedbackEventRecord(Base):
+    __tablename__ = "feedback_events"
+
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    job_id: Mapped[str] = mapped_column(
+        String(255),
+        ForeignKey("jobs.job_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    application_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    candidate_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    resume_family_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    source: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    actor: Mapped[str] = mapped_column(String(200), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    metadata_json: Mapped[dict[str, object]] = mapped_column("metadata", JSON, default=dict)
+    model_name: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)
+    model_version: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    experiment_id: Mapped[str | None] = mapped_column(String(200), nullable=True, index=True)

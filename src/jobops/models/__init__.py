@@ -46,6 +46,13 @@ from jobops.models.evidence_retrieval import (
     EvidenceRetrievalHit,
     EvidenceRetrievalResult,
 )
+from jobops.models.feedback import (
+    FeedbackEvent,
+    FeedbackEventCreate,
+    FeedbackEventPage,
+    FeedbackEventSource,
+    FeedbackEventType,
+)
 from jobops.models.form_mapping import (
     ApplicationFieldSemantic,
     MappingSource,
@@ -108,6 +115,11 @@ from jobops.models.workday_browser import (
 )
 
 __all__ = [
+    "FeedbackEvent",
+    "FeedbackEventCreate",
+    "FeedbackEventPage",
+    "FeedbackEventSource",
+    "FeedbackEventType",
     "ApplicationFieldSemantic",
     "ApprovalCreate",
     "ApprovalDecision",
