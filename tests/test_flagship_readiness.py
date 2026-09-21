@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from jobops.approvals import ApprovalQueue
@@ -257,3 +257,52 @@ def test_readiness_snapshot_and_exception_inbox_track_latest_run_only() -> None:
         assert newest_inbox.review_required_jobs == []
         assert newest_inbox.pending_approvals == []
         assert newest_inbox.total_exceptions == 0
+
+
+def test_readiness_snapshot_respects_foreign_keys_when_parent_and_children_are_new() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+
+    @event.listens_for(engine, "connect")
+    def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    Base.metadata.create_all(engine)
+
+    job = JobPosting(
+        job_id="job-fk-order",
+        company="FK Co",
+        title="Data Engineer",
+        work_mode=WorkMode.REMOTE,
+    )
+    profile = SearchProfile(
+        profile_id="profile-fk-order",
+        candidate_id="me",
+        name="Remote Data",
+        role_queries=["Data Engineer"],
+        allowed_work_modes=[WorkMode.REMOTE],
+    )
+
+    with Session(engine) as session:
+        SqlAlchemyJobRepository(session).save(job)
+        SqlAlchemySearchProfileRepository(session).save(profile)
+
+        saved = SqlAlchemyFlagshipReadinessRepository(session).save(
+            candidate_id="me",
+            result=_run_result(
+                profile.profile_id,
+                completed_at=datetime(2026, 9, 21, 22, 45, tzinfo=UTC),
+                prepared_jobs=[
+                    _prepared(
+                        job,
+                        rank=1,
+                        readiness=FlagshipReadiness.READY,
+                    )
+                ],
+            ),
+        )
+        session.commit()
+
+        assert saved.profile_id == profile.profile_id
+        assert [item.job_id for item in saved.prepared_jobs] == [job.job_id]
