@@ -15,9 +15,9 @@ The project is intentionally designed as a portfolio-grade system spanning data 
 - **Browser safety by construction:** browser inspection, preparation, audit capture, and final submission remain distinct trust boundaries.
 - **Privacy by minimization:** browser audit artifacts preserve the evidence needed to explain a decision without becoming a candidate-answer or credential archive.
 
-## Current milestone: M3 — Browser Automation
+## Current milestone: M4 — Learning System
 
-M1 Job Intelligence and M2 Application Intelligence are complete. M3 now includes a guarded Playwright browser abstraction, semantic form understanding, Greenhouse and Lever preparation adapters, a stateful Workday workflow prototype, and privacy-safe browser audit bundles. Real headless Chromium is exercised in CI across the browser safety boundary.
+M1 Job Intelligence, M2 Application Intelligence, and M3 Browser Automation are complete. M3 now includes a guarded Playwright browser abstraction, semantic form understanding, Greenhouse and Lever preparation adapters, a stateful Workday workflow prototype, privacy-safe browser audit bundles, and an explicit one-shot final-submit authorization gate. Real headless Chromium is exercised in CI across the browser safety and execution boundaries.
 
 JobOps can ingest supported ATS feeds, normalize and persist canonical postings, identify deterministic and semantic duplicate candidates, query/filter active jobs, and rank a filtered candidate pool with an explainable baseline scorer. It can select an evidence-grounded resume family, retrieve bounded verified candidate evidence, classify application questions by risk, draft Yellow-band narrative answers with a local or compatible LLM provider, audit generated claims against cited evidence, and persist explicit human approval decisions.
 
@@ -29,8 +29,9 @@ M3 is deliberately incremental:
 - **M3.4 — Lever:** hosted/embedded application detection, posting/source metadata preservation, false-positive resistance, and semantic preparation.
 - **M3.5 — Workday:** stateful wizard modeling for resume, contact, experience, questions, disclosures, terms, Candidate Home/account access, and final review. `Next`, `Save for Later`, account actions, Apply with LinkedIn, and Submit remain typed blocked operations because Workday progression can itself be consequential.
 - **M3.6 — Browser audit artifacts:** privacy-redacted screenshots, sanitized structural/semantic/ATS JSON, correlated manifests, SHA-256 integrity records, and a storage abstraction that keeps production artifacts out of the repository.
+- **M3.7 — Explicit final-submit gate:** deterministic readiness checks, short-lived one-shot human authorization, state/session/document/control fingerprint binding, durable pre-click authorization consumption, an application-wide execution lock for concurrency/crash safety, a narrowly scoped Playwright final-submit executor, success-probe confirmation, safe receipts, and indeterminate timeout handling.
 
-The remaining M3 milestone is the **separate explicit executable/submit gate**. No current M3 path can submit a live job application.
+M3 is complete as an engineering milestone. Final-submit execution is deliberately not exposed as a stateless HTTP click endpoint: the executor requires the live browser page/session that was bound into the reviewed state. CI submits only controlled synthetic fixtures, never real employer applications.
 
 ## M1 capabilities
 
@@ -156,7 +157,7 @@ See `docs/browser-audit-artifacts.md` for the privacy, retention, storage, and i
 - claim-level answer verification;
 - persistent human approval queue.
 
-### M3 — Application Automation — in progress
+### M3 — Application Automation — complete
 
 - guarded Playwright abstraction — complete;
 - semantic generic field detection and M2 policy mapping — complete;
@@ -164,7 +165,7 @@ See `docs/browser-audit-artifacts.md` for the privacy, retention, storage, and i
 - Lever browser preparation adapter — complete;
 - Workday research/stateful prototype — complete;
 - privacy-safe screenshot/audit artifacts — complete;
-- separate explicit executable/final submit gate — remaining.
+- explicit one-shot executable/final submit gate — complete.
 
 ### M4 — Learning System
 
@@ -240,11 +241,22 @@ Application Question -> Risk/Review Classifier --------------+          |
                                                 /       |        \
                                          redaction    hashes    manifest
                                                              |
-                                                             X
-                                         no live ATS writes / no submit
                                                              |
                                                              v
-                                             Future Explicit Submit Gate
+                                               Readiness Evaluator
+                                                             |
+                                                    HUMAN AUTHORIZE
+                                                             |
+                                                             v
+                                            One-Shot Submit Authorization
+                                                             |
+                                                             v
+                                         Bound Final-Submit Executor
+                                      session + document + control hashes
+                                                             |
+                                                             v
+                                              Submission Receipt
+                                      success / failed / indeterminate
                                                              |
                                                              v
                                                   Application Tracking
@@ -304,7 +316,7 @@ pip install -e ".[dev,browser]"
 python -m playwright install chromium
 ```
 
-M3.1–M3.6 share the same browser and semantic-policy safety boundaries. Audit capture does not create a second, less-guarded browser path: screenshot capture runs inside the existing isolated context after a privacy-redaction pass, while mutation/network/submission guards remain active.
+M3.1–M3.7 share the same browser and semantic-policy safety boundaries. Audit capture does not create a second, less-guarded browser path: screenshot capture runs inside the existing isolated context after a privacy-redaction pass, while mutation/network/submission guards remain active. M3.7 adds a separate capability boundary for final submission: readiness must pass, a human must authorize the exact prepared state, the authorization is consumed once, and the bound executor rechecks the live session/document/control before clicking.
 
 Current browser contracts:
 
@@ -314,6 +326,7 @@ Current browser contracts:
 - `docs/lever-browser-adapter.md`
 - `docs/workday-browser-prototype.md`
 - `docs/browser-audit-artifacts.md`
+- `docs/explicit-submit-gate.md`
 
 ## Job ingestion
 

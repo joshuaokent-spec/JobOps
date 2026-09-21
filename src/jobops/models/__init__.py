@@ -85,6 +85,19 @@ from jobops.models.resume_selection import (
     ResumeFamilySelection,
 )
 from jobops.models.scoring import ScoreBreakdown, ScoreRequest
+from jobops.models.submission import (
+    PreparedSubmissionState,
+    SubmissionAttempt,
+    SubmissionAttemptStatus,
+    SubmissionAuthorizationStatus,
+    SubmissionExecutionOutcome,
+    SubmissionExecutionRequest,
+    SubmissionReadinessBlocker,
+    SubmissionReadinessResult,
+    SubmitAuthorization,
+    SubmitAuthorizationCreate,
+    SubmitAuthorizationRevoke,
+)
 from jobops.models.workday_browser import (
     WorkdayBlockedAction,
     WorkdayBlockedOperation,
@@ -163,6 +176,17 @@ __all__ = [
     "SemanticPreparationAction",
     "SemanticPreparationOperation",
     "SemanticPreparationPlan",
+    "PreparedSubmissionState",
+    "SubmissionAttempt",
+    "SubmissionAttemptStatus",
+    "SubmissionAuthorizationStatus",
+    "SubmissionExecutionOutcome",
+    "SubmissionExecutionRequest",
+    "SubmissionReadinessBlocker",
+    "SubmissionReadinessResult",
+    "SubmitAuthorization",
+    "SubmitAuthorizationCreate",
+    "SubmitAuthorizationRevoke",
     "TokenUsage",
     "VerificationFinding",
     "VerificationSeverity",
