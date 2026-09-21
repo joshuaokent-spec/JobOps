@@ -117,7 +117,6 @@ async def test_discovery_reapplies_hard_constraints_after_normalization() -> Non
             "salary_floor": 1,
             "work_mode": 1,
         }
-        assert repo.count.__call__
         stored = repo.list()
         assert len(stored) == 1
         assert stored[0].company == "GoodCo"
