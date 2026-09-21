@@ -209,7 +209,7 @@ class FlagshipApplicationExecutionService:
                     name: el.getAttribute("name"),
                     type: el.getAttribute("type"),
                     disabled: Boolean(el.disabled || el.getAttribute("aria-disabled") === "true"),
-                    text: (el.innerText || el.textContent || el.value || "").replace(/\s+/g, " ").trim()
+                    text: (\n                        el.innerText || el.textContent || el.value || ""\n                    ).replace(/\s+/g, " ").trim()
                 })"""
             )
             payload["selector"] = selector
