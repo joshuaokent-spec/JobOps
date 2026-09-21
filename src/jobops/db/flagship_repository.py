@@ -70,6 +70,10 @@ class SqlAlchemyFlagshipReadinessRepository:
             rejection_summary=dict(result.rejection_summary),
         )
         self.session.add(record)
+        # Persist the parent run before prepared-job rows reference its run_id.
+        # This is required on databases that enforce the foreign key immediately,
+        # including PostgreSQL.
+        self.session.flush()
 
         for prepared in result.prepared_jobs:
             evidence_ids = [
