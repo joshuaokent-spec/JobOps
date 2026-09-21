@@ -165,7 +165,7 @@ def test_greenhouse_live_preparation_fills_verified_and_approved_values_without_
             assert page.locator("#resume").evaluate("el => el.files[0].name") == "resume.pdf"
 
             capture = PlaywrightBrowserInspector().capture_live_page(page)
-            assert capture.screenshot_png.startswith(b"\\x89PNG")
+            assert capture.screenshot_png.startswith(b"\x89PNG")
             assert capture.redacted_dom_values > 0
             assert page.locator("#first").input_value() == "Casey"
             assert page.locator("#last").input_value() == "Candidate"
