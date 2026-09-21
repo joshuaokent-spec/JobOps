@@ -33,6 +33,29 @@ M3 is deliberately incremental:
 
 M3 is complete as an engineering milestone. Final-submit execution is deliberately not exposed as a stateless HTTP click endpoint: the executor requires the live browser page/session that was bound into the reviewed state. CI submits only controlled synthetic fixtures, never real employer applications.
 
+## M4 capabilities implemented so far
+
+### M4.1 — Feedback and outcome events
+
+JobOps now records learning signals as an **append-only event stream** rather than overwriting one application-status field. This preserves both when an event happened (`occurred_at`) and when JobOps first learned about it (`observed_at`), giving later dataset builders an explicit temporal boundary for preventing hindsight leakage.
+
+The first event schema covers job views/saves/skips and interest feedback; application start, preparation, submission, abandonment, and withdrawal; recruiter responses/screens; interview scheduling/completion; rejection and offer outcomes; ranking feedback; and resume-selection acceptance/override.
+
+M4.1 adds:
+
+- PostgreSQL event persistence with an Alembic migration and deterministic chronological ordering;
+- server-controlled observation timestamps distinct from real-world occurrence time;
+- semantic idempotency, so retries with the same key and event content return the original event even when a client regenerated its UUID;
+- conflict detection when an idempotency key is reused for different event semantics;
+- bounded privacy-minimized metadata that rejects answer/message, PII, authentication/session, legal-identification, EEO/demographic, and work-authorization fields;
+- optional model name/version and experiment ID context for later attribution and experiment analysis;
+- cutoff-aware querying through `observed_to`, allowing a training builder to request only facts actually known by a prediction cutoff;
+- indexed job/application/event-type/time queries;
+- `POST /v1/feedback/events`, `GET /v1/feedback/events`, and `GET /v1/feedback/events/{event_id}`;
+- unit, persistence, API, migration, temporal-order, privacy, and idempotency regression coverage using synthetic data only.
+
+See `docs/feedback-events.md` for the event semantics, temporal ML contract, idempotency rules, and privacy boundary. M4.2 will build leakage-resistant training examples from this stream.
+
 ## M1 capabilities
 
 - Greenhouse and Lever public-feed adapters;
@@ -167,9 +190,10 @@ See `docs/browser-audit-artifacts.md` for the privacy, retention, storage, and i
 - privacy-safe screenshot/audit artifacts — complete;
 - explicit one-shot executable/final submit gate — complete.
 
-### M4 — Learning System
+### M4 — Learning System — in progress
 
-- user-feedback labels;
+- immutable feedback/outcome event stream — complete;
+- leakage-resistant training dataset builder — next;
 - learned ranking baseline;
 - gradient-boosted ranking model;
 - resume-selection model;
@@ -389,15 +413,16 @@ curl "http://127.0.0.1:8000/v1/approvals?status=pending"
 ```text
 src/jobops/
   agents/         narrative drafting, verification, orchestration interfaces
-  api/            FastAPI health, jobs, scoring, ranking, and approval endpoints
+  api/            FastAPI health, jobs, scoring, ranking, approval, submission, and feedback endpoints
   approvals/      human-review state machine
   browser/        guarded inspection, semantic mapping, ATS/workflow adapters, audit artifacts
-  db/             PostgreSQL models, sessions, repositories, approval persistence
+  db/             PostgreSQL models, sessions, repositories, approvals, submissions, and feedback events
   embeddings/     pluggable semantic embedding providers
   ingestion/      ATS feed adapters, source config, refresh runner, and CLI
   knowledge/      TruthStore, resume evidence, retrieval, question policy
   llm/            provider-neutral language-model interfaces and HTTP adapters
   matching/       job scoring, resume-family selection, future learned rankers
+  feedback.py     append-only learning feedback/outcome ingestion service
   models/         typed domain/evidence/LLM/browser/ATS/workflow/audit/approval contracts
   normalization/  canonicalization plus deterministic/semantic deduplication
 
