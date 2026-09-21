@@ -4,6 +4,9 @@ from jobops.ml import RankingDatasetBuilder
 from jobops.models.candidate import CandidateProfile
 from jobops.models.feedback import FeedbackEvent, FeedbackEventSource, FeedbackEventType
 from jobops.models.job import JobPosting, WorkMode
+from pydantic import ValidationError
+import pytest
+
 from jobops.models.training_dataset import (
     DatasetSplit,
     RankingDatasetSpec,
@@ -52,6 +55,8 @@ def _point(
         candidate=_candidate(),
         job=_job(job_id),
         prediction_cutoff=cutoff,
+        candidate_snapshot_observed_at=cutoff - timedelta(minutes=2),
+        job_snapshot_observed_at=cutoff - timedelta(minutes=1),
         resume_family_id="data-engineering",
     )
 
@@ -284,3 +289,23 @@ def test_employer_outcome_is_history_feature_but_not_default_ranking_label() -> 
     assert row.features["prior_employer_outcome_count"] == 1
     assert row.label_disposition is RankingLabelDisposition.UNLABELED
     assert row.label_event_ids == []
+
+
+def test_prediction_point_rejects_future_candidate_or_job_snapshot() -> None:
+    with pytest.raises(ValidationError, match="candidate snapshot"):
+        RankingPredictionPoint(
+            candidate=_candidate(),
+            job=_job(),
+            prediction_cutoff=_BASE,
+            candidate_snapshot_observed_at=_BASE + timedelta(seconds=1),
+            job_snapshot_observed_at=_BASE,
+        )
+
+    with pytest.raises(ValidationError, match="job snapshot"):
+        RankingPredictionPoint(
+            candidate=_candidate(),
+            job=_job(),
+            prediction_cutoff=_BASE,
+            candidate_snapshot_observed_at=_BASE,
+            job_snapshot_observed_at=_BASE + timedelta(seconds=1),
+        )
