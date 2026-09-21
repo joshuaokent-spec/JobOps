@@ -35,9 +35,17 @@ class FlagshipTrackingService:
         newly_review_required = []
         readiness_changed = []
 
-        for job_id in sorted(shared_ids):
-            before = previous_by_id[job_id].readiness
+        for job_id in sorted(latest_ids):
             after = latest_by_id[job_id].readiness
+            before_item = previous_by_id.get(job_id)
+            if before_item is None:
+                if after is FlagshipReadiness.READY:
+                    newly_ready.append(job_id)
+                elif after is FlagshipReadiness.REVIEW_REQUIRED:
+                    newly_review_required.append(job_id)
+                continue
+
+            before = before_item.readiness
             if before is after:
                 continue
             readiness_changed.append(job_id)
@@ -45,22 +53,6 @@ class FlagshipTrackingService:
                 newly_ready.append(job_id)
             elif after is FlagshipReadiness.REVIEW_REQUIRED:
                 newly_review_required.append(job_id)
-
-        if previous is None:
-            newly_ready.extend(
-                sorted(
-                    job_id
-                    for job_id, item in latest_by_id.items()
-                    if item.readiness is FlagshipReadiness.READY
-                )
-            )
-            newly_review_required.extend(
-                sorted(
-                    job_id
-                    for job_id, item in latest_by_id.items()
-                    if item.readiness is FlagshipReadiness.REVIEW_REQUIRED
-                )
-            )
 
         return FlagshipTrackingSummary(
             profile_id=latest.profile_id,
