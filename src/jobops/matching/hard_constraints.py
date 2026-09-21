@@ -20,32 +20,41 @@ class HardConstraintMatcher:
 
     def evaluate(self, profile: SearchProfile, job: JobPosting) -> SearchConstraintResult:
         reasons: list[str] = []
+        codes: list[str] = []
+
+        def reject(code: str, reason: str) -> None:
+            codes.append(code)
+            reasons.append(reason)
 
         if not profile.active:
-            reasons.append("Search profile is inactive.")
+            reject("profile_inactive", "Search profile is inactive.")
 
         if profile.role_queries and not any(
             self._role_matches(query, job.title) for query in profile.role_queries
         ):
-            reasons.append("Job title does not match any requested role.")
+            reject("role", "Job title does not match any requested role.")
 
         if profile.allowed_work_modes and job.work_mode not in set(profile.allowed_work_modes):
             modes = ", ".join(mode.value for mode in profile.allowed_work_modes)
-            reasons.append(
-                f"Work mode {job.work_mode.value!r} is outside allowed modes: {modes}."
+            reject(
+                "work_mode",
+                f"Work mode {job.work_mode.value!r} is outside allowed modes: {modes}.",
             )
 
         if profile.locations and job.work_mode is not WorkMode.REMOTE:
             location = (job.location or "").casefold()
             if not any(value.casefold() in location for value in profile.locations):
-                reasons.append("Job location does not match the requested locations.")
+                reject("location", "Job location does not match the requested locations.")
 
         if profile.employment_types:
             employment_type = (job.employment_type or "").casefold()
             if employment_type not in {
                 value.casefold() for value in profile.employment_types
             }:
-                reasons.append("Employment type does not match the search profile.")
+                reject(
+                    "employment_type",
+                    "Employment type does not match the search profile.",
+                )
 
         if profile.excluded_companies:
             company = job.company.casefold()
@@ -53,29 +62,33 @@ class HardConstraintMatcher:
                 excluded.casefold() == company
                 for excluded in profile.excluded_companies
             ):
-                reasons.append("Company is excluded by the search profile.")
+                reject("excluded_company", "Company is excluded by the search profile.")
 
         if profile.allowed_sources:
             source = (job.source or "").casefold()
             if source not in {value.casefold() for value in profile.allowed_sources}:
-                reasons.append("Job source is outside the allowed source set.")
+                reject("source", "Job source is outside the allowed source set.")
 
         searchable_text = " ".join(
             [job.title, job.description, " ".join(job.required_skills), " ".join(job.preferred_skills)]
         ).casefold()
         for keyword in profile.required_keywords:
             if keyword.casefold() not in searchable_text:
-                reasons.append(f"Required keyword {keyword!r} is missing.")
+                reject("required_keyword", f"Required keyword {keyword!r} is missing.")
 
         for keyword in profile.excluded_keywords:
             if keyword.casefold() in searchable_text:
-                reasons.append(f"Excluded keyword {keyword!r} is present.")
+                reject("excluded_keyword", f"Excluded keyword {keyword!r} is present.")
 
         salary_reason = self._salary_rejection_reason(profile, job)
         if salary_reason is not None:
-            reasons.append(salary_reason)
+            reject("salary_floor", salary_reason)
 
-        return SearchConstraintResult(eligible=not reasons, reasons=reasons)
+        return SearchConstraintResult(
+            eligible=not reasons,
+            violation_codes=codes,
+            reasons=reasons,
+        )
 
     @staticmethod
     def _role_matches(query: str, title: str) -> bool:
