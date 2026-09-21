@@ -66,6 +66,38 @@ async def test_jobicy_discovers_structured_remote_jobs() -> None:
     assert job.apply_url is None
 
 
+
+@pytest.mark.asyncio
+async def test_jobicy_reports_only_queries_actually_executed_on_early_limit() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200,
+            json={
+                "jobs": [
+                    {
+                        "id": calls,
+                        "url": f"https://jobicy.com/jobs/{calls}",
+                        "jobTitle": "Data Engineer",
+                        "companyName": "Example Remote",
+                        "jobGeo": "USA",
+                    }
+                ]
+            },
+        )
+
+    provider = JobicyDiscoveryProvider()
+    profile = _profile(required_keywords=["Python", "SQL"])
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        jobs, queries = await provider.discover(profile, limit=1, client=client)
+
+    assert len(jobs) == 1
+    assert calls == 1
+    assert queries == 1
+
 def test_jobicy_skips_non_remote_only_profiles() -> None:
     provider = JobicyDiscoveryProvider()
     supported, reason = provider.supports(
